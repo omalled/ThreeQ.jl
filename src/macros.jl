@@ -21,7 +21,7 @@ macro defvar(model, x)
 			@assert x.args[i].head == :(:)
 			@assert length(x.args[i].args) == 2
 			@assert x.args[i].args[1] == 1
-			push!(dims, x.args[i].args[2])
+			push!(dims, :($(esc(x.args[i].args[2]))))
 		end
 		code = :($(esc(xsym)) = Var($stringx, fill(NaN, $(dims...))))
 		code = :($code; addvar!($(esc(model)), $(esc(xsym))))
@@ -45,12 +45,13 @@ macro addterm(model, termexpr)
 	end
 end
 
-macro loadsolution(energy, model, solutionnum)
+macro loadsolution(model, energy, occurrences, solutionnum)
 	code = quote
 		filename = string($(esc(model)).name, ".sol_", $(esc(solutionnum)))
 		f = open(filename)
 		lines = readlines(f)
 		$(esc(energy)) = parse(Float64, split(lines[4], " = ")[2])
+		$(esc(occurrences)) = parse(Int, split(lines[5], " = ")[2])
 		for i = 6:length(lines) - 1
 			splitline = split(lines[i], " <== ")
 			fullvarname = splitline[1]

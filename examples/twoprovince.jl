@@ -29,11 +29,13 @@ ToQ.solve!(model; color=1, neighbor=1, param_chain=2, numreads=100)
 i = 1
 solutions = Array{Float64, 2}[]
 energies = Float64[]
+occurrences = Int[]
 while true
 	try
-		@loadsolution energy model i
+		@loadsolution model energy occurrencesi i
 		push!(solutions, copy(province_rgb.value))
 		push!(energies, energy)
+		push!(occurrences, occurrencesi)
 	catch
 		break#break once solution i no longer exists
 	end
@@ -43,5 +45,6 @@ for i = 1:length(energies)
 	isvalid = norm(sum(solutions[i], 2) - [1., 1.]) == 0 && sum(solutions[i]) == 2
 	println("Solution #$i (valid = $isvalid)")
 	println("Energy: $(energies[i])")
+	println("Occurrences: $(occurrences[i])")
 	println("Solution:\n$(solutions[i])\n")
 end
