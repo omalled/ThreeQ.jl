@@ -1,6 +1,6 @@
 using ToQ
 
-model = ToQ.Model("modelname", "laptop", "c4-sw_sample", "workingdir")
+model = ToQ.Model("canada_model", "laptop", "c4-sw_sample", "workingdir")
 
 @defparam model color
 @defparam model neighbor
@@ -22,8 +22,6 @@ neighbors["NS"] = ["NB"]
 neighbors["PE"] = []
 neighbors["NL"] = ["QB"]
 
-q = macroexpand(:(@defvar model province_rgb[1:length(provinces), 1:3]))
-@show q
 @defvar model province_rgb[1:length(provinces), 1:3]
 
 #add color penalties
