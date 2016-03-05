@@ -44,3 +44,30 @@ macro addterm(model, termexpr)
 		error("incorrect term: $termexpr")
 	end
 end
+
+macro loadsolution(energy, model, solutionnum)
+	code = quote
+		filename = string($(esc(model)).name, ".sol_", $(esc(solutionnum)))
+		f = open(filename)
+		lines = readlines(f)
+		$(esc(energy)) = parse(Float64, split(lines[4], " = ")[2])
+		for i = 6:length(lines) - 1
+			splitline = split(lines[i], " <== ")
+			fullvarname = splitline[1]
+			splitvarname = split(fullvarname, "___")
+			modelvars = $(esc(model)).vars
+			for j = 1:length(modelvars)
+				if splitvarname[1] == string(modelvars[j].name)
+					if length(splitvarname) == 1
+						modelvars[j].value = parse(Float64, splitline[2])
+					else
+						indices = map(i->parse(Int, i), splitvarname[2:end])
+						modelvars[j].value[indices...] = parse(Float64, splitline[2])
+					end
+				end
+			end
+		end
+		close(f)
+	end
+	return code
+end

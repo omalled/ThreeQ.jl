@@ -32,9 +32,8 @@ type Model
 	params::Array{Param, 1}
 	vars::Array{Var, 1}
 	terms::Array{Term, 1}
-	asserts::Array{Tuple{Param, Expr}, 1}
 end
 
 function Model(name, connection, solver, workingdir)
-	return Model(name, connection, solver, workingdir, Array(Symbol, 0), Array(Symbol, 0), Array(Expr, 0), Array(Tuple{Symbol, Expr}, 0))
+	return Model(name, connection, solver, workingdir, Array(Symbol, 0), Array(Symbol, 0), Array(Expr, 0))
 end

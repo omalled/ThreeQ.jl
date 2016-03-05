@@ -1,6 +1,6 @@
 module ToQ
 
-export @defparam, @defvar, @addterm
+export @defparam, @defvar, @addterm, @loadsolution
 
 import Base.getindex
 import Base.string
@@ -13,7 +13,7 @@ function string(p::Param)
 end
 
 function getindex(v::Var, args...)
-	return string(v.name, "__", join(args, "__"))
+	return string(v.name, "___", join(args, "___"))
 end
 
 function getindex{T<:Number}(v::Var{T})
@@ -68,7 +68,7 @@ function writebfile(args, filename)
 	close(f)
 end
 
-function solve(m::Model; doembed=true, removefiles=false, args...)
+function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
 	writeqfile(m, m.name * ".q")
 	writebfile(args, m.name * ".b")
 	bashscriptlines = ASCIIString[]
@@ -81,9 +81,13 @@ function solve(m::Model; doembed=true, removefiles=false, args...)
 	end
 	push!(bashscriptlines, "dw cp $(m.name).epqmi .epqmi")
 	push!(bashscriptlines, "dw bind $(m.name).b")
-	push!(bashscriptlines, "dw exec $(m.name).qmi")
+	push!(bashscriptlines, "dw exec num_reads=$numreads $(m.name).qmi")
+	push!(bashscriptlines, "rm -f $(m.name).sol_*")
 	push!(bashscriptlines, "dw val $(m.name).sol")
-	push!(bashscriptlines, "dw rm .epqmi")
+	push!(bashscriptlines, "numsols=\"\$(dw val $(m.name).sol | grep \"DISTINCT SOLUTIONS\" | awk '{print \$4;}')\"")
+	push!(bashscriptlines, "for i in `seq 1 \$numsols`; do")
+	push!(bashscriptlines, "\tdw val -s \$i $(m.name).sol >$(m.name).sol_\$i")
+	push!(bashscriptlines, "done")
 	if removefiles
 		push!(bashscriptlines, "rm $(m.name).q")
 		push!(bashscriptlines, "rm $(m.name).b")
