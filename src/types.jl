@@ -21,7 +21,15 @@ type Term
 end
 
 function Term(args...)
-	Term([map(string, args)...])
+	newargs = Any[1.]
+	for i = 1:length(args)
+		if isa(args[i], Number)
+			newargs[1] *= args[i]
+		else
+			push!(newargs, args[i])
+		end
+	end
+	Term([map(string, newargs)...])
 end
 
 type Model

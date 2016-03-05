@@ -36,6 +36,14 @@ function assemble(x::Var)
 	return "var: $(string(x.name))\n"
 end
 
+function assemble{T<:Vector}(x::Var{T})
+	strings = ASCIIString[]
+	for i = 1:length(x.value)
+		push!(strings, "var: $(x[i])")
+	end
+	return join(strings, "\n") * "\n"
+end
+
 function assemble{T<:Matrix}(x::Var{T})
 	strings = ASCIIString[]
 	for i = 1:size(x.value, 1)
