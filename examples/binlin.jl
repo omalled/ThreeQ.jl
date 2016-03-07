@@ -68,8 +68,12 @@ function binlin(A, b; eqscalingval=1 / 8)
 end
 
 function setup_random(N)
+	#=
 	A = randn(N, N)
 	b = randn(N)
+	=#
+	A = rand(N, N) / N
+	b = rand(N)
 	return A, b
 end
 function setup_sparse_random(N, p)
@@ -119,7 +123,6 @@ function setup_nbit_laplacian(N, n)
 		A[end, end - 2 * n + i] = 1 * bitvals[i]
 		A[end, end - n + i] = -2 * bitvals[i]
 	end
-	println("asdf")
 	for i = 2:N - 1
 		for j = 1:n
 			A[i, n * i - 2 * n + j] = 1 * bitvals[j]
@@ -129,19 +132,17 @@ function setup_nbit_laplacian(N, n)
 	end
 	x = bitrand(n * N)
 	b = A * x
-	@show x
-	@show b
 	return A, b
 end
-srand(0)
-N = 3
-numreads = 10000
-#A, b = setup_random(N); eqscalingval = 1 / N
+#srand(0)
+N = 16
+numreads = 1000
+A, b = setup_random(N); eqscalingval = 1 / N
 #A, b = setup_sparse_random(N, .25); eqscalingval = 1 / 8
 #A, b = setup_laplacian(N); eqscalingval = 1 / N ^ .75
 #A, b = setup_laplacian_lu_lower(N); eqscalingval = 1.
 #A, b = setup_twobit_laplacian(N); eqscalingval = 1 / 32
-A, b = setup_nbit_laplacian(N, 3); eqscalingval = .005
+#A, b = setup_nbit_laplacian(N, 3); eqscalingval = .005
 solutions, energies, trueenergies, occurrences = binlin(A, b; eqscalingval=eqscalingval)#solve it with dwave
 bestx, minnorm = bruteforce(A, b)#solve it by brute force
 @show solutions[1]
