@@ -116,7 +116,8 @@ end
 function setup_nbit_laplacian(N, n)
 	A = zeros(N, n * N)
 	#b = -.75 * ones(N)
-	bitvals = [2 ^ i for i = reverse(0:n - 1)]
+	#bitvals = [2 ^ i for i = reverse(0:n - 1)]
+	bitvals = [2. ^ -i for i = 0:n - 1]
 	for i = 1:n
 		A[1, i] = -2 * bitvals[i]
 		A[1, n + i] = 1 * bitvals[i]
@@ -134,7 +135,7 @@ function setup_nbit_laplacian(N, n)
 	b = A * x
 	return A, b
 end
-#srand(0)
+srand(0)
 N = 16
 numreads = 1000
 A, b = setup_random(N); eqscalingval = 1 / N
@@ -143,6 +144,7 @@ A, b = setup_random(N); eqscalingval = 1 / N
 #A, b = setup_laplacian_lu_lower(N); eqscalingval = 1.
 #A, b = setup_twobit_laplacian(N); eqscalingval = 1 / 32
 #A, b = setup_nbit_laplacian(N, 3); eqscalingval = .005
+#A, b = setup_nbit_laplacian(N, 4); eqscalingval = 1e-3
 solutions, energies, trueenergies, occurrences = binlin(A, b; eqscalingval=eqscalingval)#solve it with dwave
 bestx, minnorm = bruteforce(A, b)#solve it by brute force
 @show solutions[1]
@@ -159,13 +161,15 @@ for i = reverse(1:length(energies))
 		println("Solution #$i (valid = $isvalid)")
 		println("Energy: $(energies[i])")
 		println("Occurrences: $(occurrences[i])")
-		println("Solution:\n$(solutions[i])")
+		println("Solution:\n$(map(x->round(Int, x), solutions[i]))")
 		println("norm(A*x-b): $(norm(A * solutions[i] - b))")
 		println()
 	end
 end
 @show validcount / numreads
-@show bestx, minnorm
+#@show bestx, minnorm
+println("bestx:\n$bestx")
+println("minnorm:\n$minnorm")
 for i = 1:length(energies) - 1
 	@assert trueenergies[i] <= trueenergies[i + 1]#make sure the objective function is set up correctly
 end
