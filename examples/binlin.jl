@@ -17,8 +17,24 @@ function bruteforce(A, b)
 	return bestx, minnorm
 end
 
+#solve A*x=b using Denny's method where you represent x as sum(q_i * y[:, i]) where the y[:, i] are a fixed set of vectors
+function denlin(A, b, y; eqscalingval=1 / 8)
+	Ay = A * y
+	solutions, energies, trueenergies, occurrences = binlin(Ay, b; eqscalingval=eqscalingval)
+	bestindex = 0
+	minnorm = Inf
+	for i = 1:length(solutions)
+		thisnorm = norm(Ay * solutions[i] - b)
+		if thisnorm < minnorm
+			minnorm = thisnorm
+			bestindex = i
+		end
+	end
+	return y * solutions[bestindex]
+end
+
 #solve the equation A*x=b where x is a binary vector
-function binlin(A, b; eqscalingval=1 / 8)
+function binlin(A, b; eqscalingval=1 / 8, numreads=1000)
 	model = ToQ.Model("binlin_model", "laptop", "c4-sw_sample", "binlin")
 	@defparam model eqscaling
 	@defvar model x[1:size(A, 2)]
@@ -137,7 +153,7 @@ function setup_nbit_laplacian(N, n)
 end
 srand(0)
 N = 16
-numreads = 1000
+numreads = 4000
 A, b = setup_random(N); eqscalingval = 1 / N
 #A, b = setup_sparse_random(N, .25); eqscalingval = 1 / 8
 #A, b = setup_laplacian(N); eqscalingval = 1 / N ^ .75
@@ -145,7 +161,7 @@ A, b = setup_random(N); eqscalingval = 1 / N
 #A, b = setup_twobit_laplacian(N); eqscalingval = 1 / 32
 #A, b = setup_nbit_laplacian(N, 3); eqscalingval = .005
 #A, b = setup_nbit_laplacian(N, 4); eqscalingval = 1e-3
-solutions, energies, trueenergies, occurrences = binlin(A, b; eqscalingval=eqscalingval)#solve it with dwave
+solutions, energies, trueenergies, occurrences = binlin(A, b; eqscalingval=eqscalingval, numreads=numreads)#solve it with dwave
 bestx, minnorm = bruteforce(A, b)#solve it by brute force
 @show solutions[1]
 @show bestx

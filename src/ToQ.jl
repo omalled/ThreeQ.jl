@@ -80,6 +80,7 @@ function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
 	writeqfile(m, m.name * ".q")
 	writebfile(args, m.name * ".b")
 	bashscriptlines = ASCIIString[]
+	push!(bashscriptlines, "set -e")
 	push!(bashscriptlines, "dw set connection $(m.connection)")
 	push!(bashscriptlines, "dw set solver $(m.solver)")
 	push!(bashscriptlines, "dw mkdir -p $(m.workingdir)")
