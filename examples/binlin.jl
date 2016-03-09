@@ -76,7 +76,7 @@ function binlin(A, b; eqscalingval=1 / 8, numreads=1000)
 		push!(trueenergies, trueenergy)
 		push!(occurrences, occurrencesi)
 	end
-	return solutions, energies, trueenergies, occurrences
+	return solutions, energies, trueenergies, occurrences, model
 end
 
 function setup_random(N)
@@ -127,9 +127,7 @@ function setup_twobit_laplacian(N)
 end
 function setup_nbit_laplacian(N, n)
 	A = zeros(N, n * N)
-	#b = -.75 * ones(N)
-	#bitvals = [2 ^ i for i = reverse(0:n - 1)]
-	bitvals = [2. ^ -i for i = 0:n - 1]
+	bitvals = [2. ^ -i for i = 1:n]
 	for i = 1:n
 		A[1, i] = -2 * bitvals[i]
 		A[1, n + i] = 1 * bitvals[i]
@@ -143,21 +141,26 @@ function setup_nbit_laplacian(N, n)
 			A[i, n * i + j] = 1 * bitvals[j]
 		end
 	end
-	x = bitrand(n * N)
+	#x = bitrand(n * N)
+	x = zeros(n * N)
+	for i = 1:N
+		x[(i - 1) * n + 1] = 1
+	end
+	@show x
 	b = A * x
 	return A, b
 end
 srand(0)
-N = 16
-numreads = 100000
+N = 3
+numreads = 10 ^ 4
 A, b = setup_random(N); eqscalingval = 1 / N
 #A, b = setup_sparse_random(N, .25); eqscalingval = 1 / 8
 #A, b = setup_laplacian(N); eqscalingval = 1 / N ^ .75
 #A, b = setup_laplacian_lu_lower(N); eqscalingval = 1.
 #A, b = setup_twobit_laplacian(N); eqscalingval = 1 / 32
 #A, b = setup_nbit_laplacian(N, 3); eqscalingval = .005
-#A, b = setup_nbit_laplacian(N, 4); eqscalingval = 1e-3
-@time solutions, energies, trueenergies, occurrences = binlin(A, b; eqscalingval=eqscalingval, numreads=numreads)#solve it with dwave
+A, b = setup_nbit_laplacian(N, 4); eqscalingval = 1e-4
+@time solutions, energies, trueenergies, occurrences, model = binlin(A, b; eqscalingval=eqscalingval, numreads=numreads)#solve it with dwave
 bestx, minnorm = bruteforce(A, b)#solve it by brute force
 @show solutions[1]
 @show bestx
@@ -182,6 +185,8 @@ end
 #@show bestx, minnorm
 println("bestx:\n$bestx")
 println("minnorm:\n$minnorm")
+#=
 for i = 1:length(energies) - 1
 	@assert trueenergies[i] <= trueenergies[i + 1]#make sure the objective function is set up correctly
 end
+=#

@@ -98,15 +98,18 @@ function parseembedding(filename)
 	lines = readlines(f)
 	close(f)
 	embedding = Dict()
+	numqubits = -1
 	for line in lines
 		if startswith(line, "VAR")
 			paramname = split(chomp(line), "\"")[2]
 			qsstring = split(chomp(line), ":")[2]
 			qstrings = split(qsstring)
 			embedding[paramname] = map(x->parse(Int, x[2:end]) + 1, qstrings)
+		elseif contains(line, "qubits used=")
+			numqubits = parse(Int, split(line, "=")[2])
 		end
 	end
-	return embedding
+	return embedding, numqubits
 end
 
 function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
@@ -119,10 +122,11 @@ function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
 	push!(bashscriptlines, "dw mkdir -p $(m.workingdir)")
 	push!(bashscriptlines, "dw cd $(m.workingdir)")
 	if doembed
-		push!(bashscriptlines, "dw embed $(m.name).q -o $(m.name).epqmi")
+		push!(bashscriptlines, "dw embed $(m.name).q -o $(m.name).epqmi 2>$(m.name).embedding_info")
+		push!(bashscriptlines, "cat $(m.name).embedding_info")
 	end
 	push!(bashscriptlines, "dw cp $(m.name).epqmi .epqmi")
-	push!(bashscriptlines, "dw get embedding >$(m.name).embedding_info")
+	push!(bashscriptlines, "dw get embedding >>$(m.name).embedding_info")
 	push!(bashscriptlines, "dw bind $(m.name).b")
 	push!(bashscriptlines, "dw exec num_reads=$numreads $(m.name).qmi")
 	push!(bashscriptlines, "rm -f $(m.name).sol_*")
@@ -137,7 +141,7 @@ function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
 	end
 	close(bashscript)
 	run(`bash $(m.name).bash`)
-	m.embedding = parseembedding("$(m.name).embedding_info")
+	m.embedding, m.numqubits = parseembedding("$(m.name).embedding_info")
 	m.bitsolutions, m.energies, m.occurrences = readsol(joinpath(ENV["DWAVE_HOME"], string("workspace.", m.workspace), m.workingdir, string(m.name, ".sol")))
 	m.valid = Array(Bool, length(m.bitsolutions))
 	for j = 1:length(m.valid)
