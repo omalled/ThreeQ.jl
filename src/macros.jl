@@ -45,30 +45,28 @@ macro addterm(model, termexpr)
 	end
 end
 
-macro loadsolution(model, energy, occurrences, solutionnum)
+macro loadsolution(modelexpr, energy, occurrences, valid, solutionnumexpr)
 	code = quote
-		filename = string($(esc(model)).name, ".sol_", $(esc(solutionnum)))
-		f = open(filename)
-		lines = readlines(f)
-		$(esc(energy)) = parse(Float64, split(lines[4], " = ")[2])
-		$(esc(occurrences)) = parse(Int, split(lines[5], " = ")[2])
-		for i = 6:length(lines) - 1
-			splitline = split(lines[i], " <== ")
-			fullvarname = splitline[1]
+		model = $(esc(modelexpr))
+		solutionnum = $(esc(solutionnumexpr))
+		$(esc(energy)) = model.energies[solutionnum]
+		$(esc(occurrences)) = model.occurrences[solutionnum]
+		$(esc(valid)) = model.valid[solutionnum]
+		for fullvarname in keys(model.embedding)
 			splitvarname = split(fullvarname, "___")
-			modelvars = $(esc(model)).vars
-			for j = 1:length(modelvars)
-				if splitvarname[1] == string(modelvars[j].name)
+			for j = 1:length(model.vars)
+				if splitvarname[1] == string(model.vars[j].name)
+					value = model.bitsolutions[solutionnum][rand(model.embedding[fullvarname])]
 					if length(splitvarname) == 1
-						modelvars[j].value = parse(Float64, splitline[2])
+						model.vars[j].value = value
 					else
 						indices = map(i->parse(Int, i), splitvarname[2:end])
-						modelvars[j].value[indices...] = parse(Float64, splitline[2])
+						model.vars[j].value[indices...] = value
 					end
 				end
 			end
 		end
-		close(f)
 	end
 	return code
 end
+

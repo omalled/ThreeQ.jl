@@ -1,6 +1,6 @@
 using ToQ
 
-model = ToQ.Model("modelname", "laptop", "c4-sw_sample", "workingdir")
+model = ToQ.Model("modelname", "laptop", "c4-sw_sample", "workingdir", "c4")
 
 @defparam model color
 @defparam model neighbor
@@ -30,16 +30,12 @@ i = 1
 solutions = Array{Float64, 2}[]
 energies = Float64[]
 occurrences = Int[]
-while true
-	try
-		@loadsolution model energy occurrencesi i
-		push!(solutions, copy(province_rgb.value))
-		push!(energies, energy)
-		push!(occurrences, occurrencesi)
-	catch
-		break#break once solution i no longer exists
-	end
-	i += 1
+numsolutions = ToQ.getnumsolutions(model)
+for i = 1:numsolutions
+	@loadsolution model energy occurrencesi valid i
+	push!(solutions, copy(province_rgb.value))
+	push!(energies, energy)
+	push!(occurrences, occurrencesi)
 end
 for i = 1:length(energies)
 	isvalid = norm(sum(solutions[i], 2) - [1., 1.]) == 0 && sum(solutions[i]) == 2

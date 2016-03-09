@@ -35,7 +35,7 @@ end
 
 #solve the equation A*x=b where x is a binary vector
 function binlin(A, b; eqscalingval=1 / 8, numreads=1000)
-	model = ToQ.Model("binlin_model", "laptop", "c4-sw_sample", "binlin")
+	model = ToQ.Model("binlin_model", "laptop", "c4-sw_sample", "binlin", "c4")
 	@defparam model eqscaling
 	@defvar model x[1:size(A, 2)]
 	#set up each equation
@@ -67,18 +67,14 @@ function binlin(A, b; eqscalingval=1 / 8, numreads=1000)
 	energies = Float64[]
 	trueenergies = Float64[]
 	occurrences = Float64[]
-	while true
-		try
-			@loadsolution model energy occurrencesi i
-			push!(solutions, copy(x.value))
-			push!(energies, energy)
-			trueenergy = norm(A * x.value - b) ^ 2
-			push!(trueenergies, trueenergy)
-			push!(occurrences, occurrencesi)
-		catch
-			break#break once solution i no longer exists
-		end
-		i += 1
+	numsolutions = ToQ.getnumsolutions(model)
+	for i = 1:numsolutions
+		@loadsolution model energy occurrencesi valid i
+		push!(solutions, copy(x.value))
+		push!(energies, energy)
+		trueenergy = norm(A * x.value - b) ^ 2
+		push!(trueenergies, trueenergy)
+		push!(occurrences, occurrencesi)
 	end
 	return solutions, energies, trueenergies, occurrences
 end
@@ -153,7 +149,7 @@ function setup_nbit_laplacian(N, n)
 end
 srand(0)
 N = 16
-numreads = 4000
+numreads = 100000
 A, b = setup_random(N); eqscalingval = 1 / N
 #A, b = setup_sparse_random(N, .25); eqscalingval = 1 / 8
 #A, b = setup_laplacian(N); eqscalingval = 1 / N ^ .75
@@ -161,7 +157,7 @@ A, b = setup_random(N); eqscalingval = 1 / N
 #A, b = setup_twobit_laplacian(N); eqscalingval = 1 / 32
 #A, b = setup_nbit_laplacian(N, 3); eqscalingval = .005
 #A, b = setup_nbit_laplacian(N, 4); eqscalingval = 1e-3
-solutions, energies, trueenergies, occurrences = binlin(A, b; eqscalingval=eqscalingval, numreads=numreads)#solve it with dwave
+@time solutions, energies, trueenergies, occurrences = binlin(A, b; eqscalingval=eqscalingval, numreads=numreads)#solve it with dwave
 bestx, minnorm = bruteforce(A, b)#solve it by brute force
 @show solutions[1]
 @show bestx

@@ -1,6 +1,6 @@
 using ToQ
 
-model = ToQ.Model("canada_model", "laptop", "c4-sw_sample", "workingdir")
+model = ToQ.Model("canada_model", "laptop", "c4-sw_sample", "workingdir", "c4")
 
 @defparam model color
 @defparam model neighbor
@@ -46,23 +46,21 @@ for j = 1:length(provinces)
 end
 
 #solve the system
-ToQ.solve!(model; color=1, neighbor=5, param_chain=2, numreads=100, doembed=true)
+@time ToQ.solve!(model; color=1, neighbor=5, param_chain=2, numreads=100, doembed=true)
 
 #load the solutions
 i = 1
 solutions = Array{Float64, 2}[]
 energies = Float64[]
-occurrences = Float64[]
-while true
-	try
-		@loadsolution model energy occurrencesi i
-		push!(solutions, copy(province_rgb.value))
-		push!(energies, energy)
-		push!(occurrences, occurrencesi)
-	catch
-		break#break once solution i no longer exists
-	end
-	i += 1
+occurrences = Int[]
+valid = Bool[]
+numsolutions = ToQ.getnumsolutions(model)
+for i = 1:numsolutions
+	@loadsolution model energy occurrencesi validi i
+	push!(solutions, copy(province_rgb.value))
+	push!(energies, energy)
+	push!(occurrences, occurrencesi)
+	push!(valid, validi)
 end
 
 #print the solutions
@@ -81,9 +79,11 @@ for i = 1:length(energies)
 	if isvalid
 		validcount += 1
 	end
+	#=
 	println("Solution #$i (valid = $isvalid)")
 	println("Energy: $(energies[i])")
 	println("Occurrences: $(occurrences[i])")
 	println("Solution:\n$(solutions[i])\n")
+	=#
 end
 @show validcount / length(solutions)

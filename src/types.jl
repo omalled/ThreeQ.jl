@@ -37,11 +37,17 @@ type Model
 	connection::ASCIIString
 	solver::ASCIIString
 	workingdir::ASCIIString
+	workspace::ASCIIString
 	params::Array{Param, 1}
 	vars::Array{Var, 1}
 	terms::Array{Term, 1}
+	bitsolutions::Array{Array{Int32, 1}, 1}
+	energies::Array{Float64, 1}
+	occurrences::Array{Int32, 1}
+	valid::Array{Bool, 1}
+	embedding::Dict
 end
 
-function Model(name, connection, solver, workingdir)
-	return Model(name, connection, solver, workingdir, Array(Symbol, 0), Array(Symbol, 0), Array(Expr, 0))
+function Model(name, connection, solver, workingdir, workspace)
+	return Model(name, connection, solver, workingdir, workspace, Array(Symbol, 0), Array(Symbol, 0), Array(Expr, 0), Array{Int32, 1}[], Float64[], Int32[], Bool[], Dict())
 end
