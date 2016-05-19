@@ -22,6 +22,7 @@ end
 
 function Term(args...)
 	newargs = Any[1.]
+	numvars = 0
 	for i = 1:length(args)
 		if isa(args[i], Number)
 			newargs[1] *= args[i]

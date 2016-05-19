@@ -45,6 +45,40 @@ macro addterm(model, termexpr)
 	end
 end
 
+macro addquadratic(model, quadexpr)
+	if typeof(quadexpr) != Expr || quadexpr.head != :call || quadexpr.args[1] != :^ || quadexpr.args[end] != 2
+		error("$quadexpr is not a quadratic expression")
+	else
+		innerexpr = quadexpr.args[2]
+		if typeof(innerexpr) == Symbol
+			code = :(addterm!($(esc(model)), Term($(esc(innerexpr)), $(esc(innerexpr)))))
+			return code
+		elseif typeof(innerexpr) == Expr && innerexpr.head == :call && innerexpr.args[1] == :+
+			code = :()
+			productants = Any[]
+			for i = 2:length(innerexpr.args)
+				if typeof(innerexpr.args[i]) == Expr && innerexpr.args[i].head == :ref
+					push!(productants, Any[innerexpr.args[i]])
+				else
+					push!(productants, innerexpr.args[i].args[2:end])
+				end
+			end
+			for i = 1:length(productants)
+				code = :($code; addterm!($(esc(model)), Term($(map(esc, [productants[i]; productants[i]])...))))
+				for j = 1:i - 1
+					code = :($code; addterm!($(esc(model)), Term($(map(esc, [2; productants[i]; productants[j]])...))))
+				end
+			end
+			return code
+		elseif typeof(innerexpr) == Expr && innerexpr.head == :call && innerexpr.args[1] == :*
+			code = :(addterm!($(esc(model)), Term($(map(esc, [innerexpr.args[2:end]; innerexpr.args[2:end]])...))))
+			return code
+		else
+			error("cannot handle inner part of quadratic expression: $innerexpr")
+		end
+	end
+end
+
 macro loadsolution(modelexpr, energy, occurrences, valid, solutionnumexpr)
 	code = quote
 		model = $(esc(modelexpr))
@@ -69,4 +103,3 @@ macro loadsolution(modelexpr, energy, occurrences, valid, solutionnumexpr)
 	end
 	return code
 end
-

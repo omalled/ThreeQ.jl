@@ -1,6 +1,6 @@
 module ToQ
 
-export @defparam, @defvar, @addterm, @loadsolution
+export @defparam, @defvar, @addterm, @addquadratic, @loadsolution
 
 import Base.getindex
 import Base.string
@@ -16,7 +16,7 @@ function getindex(v::Var, args...)
 	return string(v.name, "___", join(args, "___"))
 end
 
-function getindex{T<:Number}(v::Var{T})
+function string(v::Var)
 	return string(v.name)
 end
 

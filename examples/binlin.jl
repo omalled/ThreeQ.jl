@@ -153,7 +153,7 @@ end
 srand(0)
 N = 3
 numreads = 10 ^ 4
-A, b = setup_random(N); eqscalingval = 1 / N
+#A, b = setup_random(N); eqscalingval = 1 / N
 #A, b = setup_sparse_random(N, .25); eqscalingval = 1 / 8
 #A, b = setup_laplacian(N); eqscalingval = 1 / N ^ .75
 #A, b = setup_laplacian_lu_lower(N); eqscalingval = 1.
