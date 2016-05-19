@@ -32,6 +32,7 @@ macro defvar(model, x)
 end
 
 macro addterm(model, termexpr)
+	termexpr = macroexpand(termexpr)
 	if typeof(termexpr) == Expr
 		@assert termexpr.head == :call
 		@assert termexpr.args[1] == :*
@@ -46,18 +47,19 @@ macro addterm(model, termexpr)
 end
 
 macro addquadratic(model, quadexpr)
+	quadexpr = macroexpand(quadexpr)
 	if typeof(quadexpr) != Expr || quadexpr.head != :call || quadexpr.args[1] != :^ || quadexpr.args[end] != 2
 		error("$quadexpr is not a quadratic expression")
 	else
 		innerexpr = quadexpr.args[2]
-		if typeof(innerexpr) == Symbol
+		if typeof(innerexpr) == Symbol || isa(innerexpr, Number)
 			code = :(addterm!($(esc(model)), Term($(esc(innerexpr)), $(esc(innerexpr)))))
 			return code
 		elseif typeof(innerexpr) == Expr && innerexpr.head == :call && innerexpr.args[1] == :+
 			code = :()
 			productants = Any[]
 			for i = 2:length(innerexpr.args)
-				if typeof(innerexpr.args[i]) == Expr && innerexpr.args[i].head == :ref
+				if (typeof(innerexpr.args[i]) == Expr && innerexpr.args[i].head == :ref) || isa(innerexpr.args[i], Number)
 					push!(productants, Any[innerexpr.args[i]])
 				else
 					push!(productants, innerexpr.args[i].args[2:end])

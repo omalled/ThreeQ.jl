@@ -46,3 +46,14 @@ model = ToQ.Model("test_model", "laptop", "c4-sw_sample", "testdir", "c4")
 @test model.terms[6].prodstrings[1] == string(1.)
 @test model.terms[6].prodstrings[2] == "qs___2"
 @test model.terms[6].prodstrings[3] == "qs___2"
+macro blah(x)
+	return :($(esc(:q)))
+end
+
+#test that you can use macros inside the expressions for terms and quadratics
+@addterm model @blah 1
+@test model.terms[7].prodstrings[1] == "q"
+@addquadratic model (@blah 1) ^ 2
+@test model.terms[8].prodstrings[1] == string(1.)
+@test model.terms[8].prodstrings[2] == "q"
+@test model.terms[8].prodstrings[3] == "q"

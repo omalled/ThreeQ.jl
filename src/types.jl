@@ -20,6 +20,10 @@ type Term
 	prodstrings::Array{ASCIIString, 1}
 end
 
+function Term(arg)
+	Term([string(arg)])
+end
+
 function Term(args...)
 	newargs = Any[1.]
 	numvars = 0
