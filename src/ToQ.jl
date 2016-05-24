@@ -10,6 +10,10 @@ import Base.==
 include("types.jl")
 include("macros.jl")
 
+function ==(x::VarRef, y::VarRef)
+	return x.v == y.v && x.args == y.args
+end
+
 function getindex{T}(v::Var{T}, args...)
 	if ndims(T) != length(args)
 		error("cannot access var $(v.name) with $(length(args)) dimensions when the dimensions are $(ndims(T))")
@@ -141,19 +145,27 @@ function parseembedding(filename)
 end
 
 function varset(t::LinearTerm)
-	return Set(Any[t.var])
+	return Set(map(string, [t.var]))
 end
 
 function varset(t::ParamLinearTerm)
-	return Set(Any[t.param, t.var])
+	return Set(map(string, [t.param, t.var]))
 end
 
 function varset(t::QuadraticTerm)
-	return Set(Any[t.var1, t.var2])
+	if t.var1 == t.var2
+		return Set(map(string, [t.var1, 2]))
+	else
+		return Set(map(string, [t.var1, t.var2]))
+	end
 end
 
 function varset(t::ParamQuadraticTerm)
-	return Set(Any[t.param, t.var1, t.var2])
+	if t.var1 == t.var2
+		return Set(map(string, [t.param, t.var1, 2]))
+	else
+		return Set(map(string, [t.param, t.var1, t.var2]))
+	end
 end
 
 function varset(t::ConstantTerm)

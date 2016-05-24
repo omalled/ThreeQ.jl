@@ -21,10 +21,6 @@ type VarRef
 	args::Tuple
 end
 
-function ==(x::VarRef, y::VarRef)
-	return x.v == y.v || x.args == y.args
-end
-
 abstract Term
 
 type ConstantTerm <: Term
