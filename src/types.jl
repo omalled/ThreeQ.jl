@@ -16,25 +16,76 @@ function Var(s::AbstractString, value=NaN)
 	Var(symbol(s), value)
 end
 
-type Term
-	prodstrings::Array{ASCIIString, 1}
+type VarRef
+	v::Var
+	args::Tuple
 end
 
-function Term(arg)
-	Term([string(arg)])
+function ==(x::VarRef, y::VarRef)
+	return x.v == y.v || x.args == y.args
+end
+
+abstract Term
+
+type ConstantTerm <: Term
+	realcoeff::Float64
+end
+
+type LinearTerm <: Term
+	realcoeff::Float64
+	var::Union{Var, VarRef}
+end
+
+type ParamLinearTerm <: Term
+	realcoeff::Float64
+	param::Param
+	var::Union{Var, VarRef}
+end
+
+type QuadraticTerm <: Term
+	realcoeff::Float64
+	var1::Union{Var, VarRef}
+	var2::Union{Var, VarRef}
+end
+
+type ParamQuadraticTerm <: Term
+	realcoeff::Float64
+	param::Param
+	var1::Union{Var, VarRef}
+	var2::Union{Var, VarRef}
 end
 
 function Term(args...)
-	newargs = Any[1.]
+	realcoeff = 1.
 	numvars = 0
+	vars = Union{Var, VarRef}[]
+	params = Param[]
 	for i = 1:length(args)
 		if isa(args[i], Number)
-			newargs[1] *= args[i]
+			realcoeff *= args[i]
+		elseif isa(args[i], Var)
+			push!(vars, args[i])
+		elseif isa(args[i], VarRef)
+			push!(vars, args[i])
+		elseif isa(args[i], Param)
+			push!(params, args[i])
 		else
-			push!(newargs, args[i])
+			error("productant $(args[i]) of unknown type $(typeof(args[i]))")
 		end
 	end
-	Term([map(string, newargs)...])
+	if length(params) == 0 && length(vars) == 0
+		return ConstantTerm(realcoeff)
+	elseif length(params) == 0 && length(vars) == 1
+		return LinearTerm(realcoeff, vars[1])
+	elseif length(params) == 1 && length(vars) == 1
+		return ParamLinearTerm(realcoeff, params[1], vars[1])
+	elseif length(params) == 0 && length(vars) == 2
+		return QuadraticTerm(realcoeff, vars[1], vars[2])
+	elseif length(params) == 1 && length(vars) == 2
+		return ParamQuadraticTerm(realcoeff, params[1], vars[1], vars[2])
+	else
+		error("invalid term $(args)")
+	end
 end
 
 type Model

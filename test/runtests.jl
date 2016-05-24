@@ -22,38 +22,42 @@ model = ToQ.Model("test_model", "laptop", "c4-sw_sample", "testdir", "c4")
 
 #test @addterm
 @addterm model (1 + exp(3)) * p * q * qs[2] * 2 * pi
-@test model.terms[1].prodstrings[1] == string(2 * (1 + exp(3)) * pi)
-@test model.terms[1].prodstrings[2] == "p"
-@test model.terms[1].prodstrings[3] == "q"
-@test model.terms[1].prodstrings[4] == "qs___2"
+@test isa(model.terms[1], ToQ.ParamQuadraticTerm)
+@test model.terms[1].realcoeff == 2 * (1 + exp(3)) * pi
+@test model.terms[1].param == p
+@test model.terms[1].var1 == q
+@test model.terms[1].var2 == qs[2]
 
 #test @addquadratic
 @addquadratic model q ^ 2
-@test model.terms[2].prodstrings[1] == string(1.)
-@test model.terms[2].prodstrings[2] == "q"
-@test model.terms[2].prodstrings[3] == "q"
+@test isa(model.terms[2], ToQ.QuadraticTerm)
+@test model.terms[2].realcoeff == 1.
+@test model.terms[2].var1 == q
+@test model.terms[2].var2 == q
 @addquadratic model (qs[1] + -1 * qs[2]) ^ 2
-@test model.terms[3].prodstrings[1] == string(1.)
-@test model.terms[3].prodstrings[2] == "qs___1"
-@test model.terms[3].prodstrings[3] == "qs___1"
-@test model.terms[4].prodstrings[1] == string(1.)
-@test model.terms[4].prodstrings[2] == "qs___2"
-@test model.terms[4].prodstrings[3] == "qs___2"
-@test model.terms[5].prodstrings[1] == string(-2.)
-@test model.terms[5].prodstrings[2] == "qs___2"
-@test model.terms[5].prodstrings[3] == "qs___1"
+@test model.terms[3].realcoeff == 1.
+@test model.terms[3].var1 == qs[1]
+@test model.terms[3].var2 == qs[1]
+@test model.terms[4].realcoeff == 1.
+@test model.terms[4].var1 == qs[2]
+@test model.terms[4].var2 == qs[2]
+@test model.terms[5].realcoeff == -2.
+@test model.terms[5].var1 == qs[2]
+@test model.terms[5].var2 == qs[1]
 @addquadratic model (-1 * qs[2]) ^ 2
-@test model.terms[6].prodstrings[1] == string(1.)
-@test model.terms[6].prodstrings[2] == "qs___2"
-@test model.terms[6].prodstrings[3] == "qs___2"
+@test model.terms[6].realcoeff == 1.
+@test model.terms[6].var1 == qs[2]
+@test model.terms[6].var2 == qs[2]
 macro blah(x)
 	return :($(esc(:q)))
 end
 
 #test that you can use macros inside the expressions for terms and quadratics
 @addterm model @blah 1
-@test model.terms[7].prodstrings[1] == "q"
+@test isa(model.terms[7], ToQ.LinearTerm)
+@test model.terms[7].realcoeff == 1.
+@test model.terms[7].var == q
 @addquadratic model (@blah 1) ^ 2
-@test model.terms[8].prodstrings[1] == string(1.)
-@test model.terms[8].prodstrings[2] == "q"
-@test model.terms[8].prodstrings[3] == "q"
+@test model.terms[8].realcoeff == 1.
+@test model.terms[8].var1 == q
+@test model.terms[8].var2 == q

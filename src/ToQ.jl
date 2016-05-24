@@ -4,20 +4,45 @@ export @defparam, @defvar, @addterm, @addquadratic, @loadsolution
 
 import Base.getindex
 import Base.string
+import Base.length
+import Base.==
 
 include("types.jl")
 include("macros.jl")
+
+function getindex{T}(v::Var{T}, args...)
+	if ndims(T) != length(args)
+		error("cannot access var $(v.name) with $(length(args)) dimensions when the dimensions are $(ndims(T))")
+	end
+	return VarRef(v, args)
+end
 
 function string(p::Param)
 	return string(p.name)
 end
 
-function getindex(v::Var, args...)
-	return string(v.name, "___", join(args, "___"))
-end
-
 function string(v::Var)
 	return string(v.name)
+end
+
+function string(vr::VarRef)
+	return string(string(vr.v), "___", join(vr.args, "___"))
+end
+
+function string(t::LinearTerm)
+	return string(join(map(string, [t.realcoeff, t.var]), " * "))
+end
+
+function string(t::ParamLinearTerm)
+	return string(join(map(string, [t.realcoeff, t.param, t.var]), " * "))
+end
+
+function string(t::QuadraticTerm)
+	return string(join(map(string, [t.realcoeff, t.var1, t.var2]), " * "))
+end
+
+function string(t::ParamQuadraticTerm)
+	return string(join(map(string, [t.realcoeff, t.param, t.var1, t.var2]), " * "))
 end
 
 function addparam!(model, x)
@@ -28,6 +53,9 @@ function addvar!(model, x)
 	push!(model.vars, x)
 end
 
+function addterm!(model, term::ConstantTerm)
+	#do nothing for constant terms
+end
 function addterm!(model, term)
 	push!(model.terms, term)
 end
@@ -39,7 +67,7 @@ end
 function assemble{T<:Vector}(x::Var{T})
 	strings = ASCIIString[]
 	for i = 1:length(x.value)
-		push!(strings, "var: $(x[i])")
+		push!(strings, "var: $(string(x[i]))")
 	end
 	return join(strings, "\n") * "\n"
 end
@@ -48,7 +76,7 @@ function assemble{T<:Matrix}(x::Var{T})
 	strings = ASCIIString[]
 	for i = 1:size(x.value, 1)
 		for j = 1:size(x.value, 2)
-			push!(strings, "var: $(x[i, j])")
+			push!(strings, "var: $(string(x[i, j]))")
 		end
 	end
 	return join(strings, "\n") * "\n"
@@ -63,7 +91,7 @@ function writeqfile(m::Model, filename)
 		write(f, assemble(x))
 	end
 	for x in m.terms
-		write(f, "term: $(join(x.prodstrings, " * "))\n")
+		write(f, "term: $(string(x))\n")
 	end
 	close(f)
 end
@@ -112,7 +140,51 @@ function parseembedding(filename)
 	return embedding, numqubits
 end
 
+function varset(t::LinearTerm)
+	return Set(Any[t.var])
+end
+
+function varset(t::ParamLinearTerm)
+	return Set(Any[t.param, t.var])
+end
+
+function varset(t::QuadraticTerm)
+	return Set(Any[t.var1, t.var2])
+end
+
+function varset(t::ParamQuadraticTerm)
+	return Set(Any[t.param, t.var1, t.var2])
+end
+
+function varset(t::ConstantTerm)
+	return Set()
+end
+
+function collectterms!(m::Model)
+	termdict = Dict()
+	for term in m.terms
+		s = varset(term)
+		if haskey(termdict, s)
+			push!(termdict[s], term)
+		else
+			termdict[s] = Term[term]
+		end
+	end
+	newterms = Term[]
+	for k in keys(termdict)
+		if k != Set()#skip constant terms
+			newterm = termdict[k][1]
+			for i = 2:length(termdict[k])
+				newterm.realcoeff += termdict[k][i].realcoeff
+			end
+			push!(newterms, newterm)
+		end
+	end
+	m.terms = newterms
+end
+
 function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
+	collectterms!(m)
 	writeqfile(m, m.name * ".q")
 	writebfile(args, m.name * ".b")
 	bashscriptlines = ASCIIString[]
