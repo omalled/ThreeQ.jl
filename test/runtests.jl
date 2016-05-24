@@ -30,24 +30,20 @@ model = ToQ.Model("test_model", "laptop", "c4-sw_sample", "testdir", "c4")
 
 #test @addquadratic
 @addquadratic model q ^ 2
-@test isa(model.terms[2], ToQ.QuadraticTerm)
+@test isa(model.terms[2], ToQ.LinearTerm)
 @test model.terms[2].realcoeff == 1.
-@test model.terms[2].var1 == q
-@test model.terms[2].var2 == q
+@test model.terms[2].var == q
 @addquadratic model (qs[1] + -1 * qs[2]) ^ 2
 @test model.terms[3].realcoeff == 1.
-@test model.terms[3].var1 == qs[1]
-@test model.terms[3].var2 == qs[1]
+@test model.terms[3].var == qs[1]
 @test model.terms[4].realcoeff == 1.
-@test model.terms[4].var1 == qs[2]
-@test model.terms[4].var2 == qs[2]
+@test model.terms[4].var == qs[2]
 @test model.terms[5].realcoeff == -2.
 @test model.terms[5].var1 == qs[2]
 @test model.terms[5].var2 == qs[1]
 @addquadratic model (-1 * qs[2]) ^ 2
 @test model.terms[6].realcoeff == 1.
-@test model.terms[6].var1 == qs[2]
-@test model.terms[6].var2 == qs[2]
+@test model.terms[6].var == qs[2]
 macro blah(x)
 	return :($(esc(:q)))
 end
@@ -59,5 +55,4 @@ end
 @test model.terms[7].var == q
 @addquadratic model (@blah 1) ^ 2
 @test model.terms[8].realcoeff == 1.
-@test model.terms[8].var1 == q
-@test model.terms[8].var2 == q
+@test model.terms[8].var == q

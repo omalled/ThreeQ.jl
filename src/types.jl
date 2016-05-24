@@ -42,6 +42,13 @@ type QuadraticTerm <: Term
 	realcoeff::Float64
 	var1::Union{Var, VarRef}
 	var2::Union{Var, VarRef}
+	function QuadraticTerm(r, v1, v2)
+		if v1 == v2
+			return LinearTerm(r, v1)
+		else
+			return new(r, v1, v2)
+		end
+	end
 end
 
 type ParamQuadraticTerm <: Term
@@ -49,6 +56,13 @@ type ParamQuadraticTerm <: Term
 	param::Param
 	var1::Union{Var, VarRef}
 	var2::Union{Var, VarRef}
+	function ParamQuadraticTerm(r, p, v1, v2)
+		if v1 == v2
+			return ParamLinearTerm(r, p, v1)
+		else
+			return new(r, p, v1, v2)
+		end
+	end
 end
 
 function Term(args...)

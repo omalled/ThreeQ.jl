@@ -153,19 +153,11 @@ function varset(t::ParamLinearTerm)
 end
 
 function varset(t::QuadraticTerm)
-	if t.var1 == t.var2
-		return Set(map(string, [t.var1, 2]))
-	else
-		return Set(map(string, [t.var1, t.var2]))
-	end
+	return Set(map(string, [t.var1, t.var2]))
 end
 
 function varset(t::ParamQuadraticTerm)
-	if t.var1 == t.var2
-		return Set(map(string, [t.param, t.var1, 2]))
-	else
-		return Set(map(string, [t.param, t.var1, t.var2]))
-	end
+	return Set(map(string, [t.param, t.var1, t.var2]))
 end
 
 function varset(t::ConstantTerm)
