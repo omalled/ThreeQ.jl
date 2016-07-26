@@ -22,23 +22,25 @@ type VarRef
 end
 
 abstract Term
+abstract AbstractLinearTerm <: Term
+abstract AbstractQuadraticTerm <: Term
 
 type ConstantTerm <: Term
 	realcoeff::Float64
 end
 
-type LinearTerm <: Term
+type LinearTerm <: AbstractLinearTerm
 	realcoeff::Float64
 	var::Union{Var, VarRef}
 end
 
-type ParamLinearTerm <: Term
+type ParamLinearTerm <: AbstractLinearTerm
 	realcoeff::Float64
 	param::Param
 	var::Union{Var, VarRef}
 end
 
-type QuadraticTerm <: Term
+type QuadraticTerm <: AbstractQuadraticTerm
 	realcoeff::Float64
 	var1::Union{Var, VarRef}
 	var2::Union{Var, VarRef}
@@ -51,7 +53,7 @@ type QuadraticTerm <: Term
 	end
 end
 
-type ParamQuadraticTerm <: Term
+type ParamQuadraticTerm <: AbstractQuadraticTerm
 	realcoeff::Float64
 	param::Param
 	var1::Union{Var, VarRef}

@@ -164,6 +164,21 @@ function varset(t::ConstantTerm)
 	return Set()
 end
 
+function collectterms!(m::Model, paramdict::Associative)
+	newterms = Term[]
+	for term in m.terms
+		if isa(term, ParamLinearTerm)
+			push!(newterms, LinearTerm(term.realcoeff * paramdict[term.param.name], term.var))
+		elseif isa(term, ParamQuadraticTerm)
+			push!(newterms, QuadraticTerm(term.realcoeff * paramdict[term.param.name], term.var1, term.var2))
+		else
+			push!(newterms, term)
+		end
+	end
+	m.terms = newterms
+	collectterms!(m)
+end
+
 function collectterms!(m::Model)
 	termdict = Dict()
 	for term in m.terms
@@ -185,6 +200,104 @@ function collectterms!(m::Model)
 		end
 	end
 	m.terms = newterms
+end
+
+function writeqbsolvfile(m::Model, filename, paramdict)
+	diagterms = AbstractLinearTerm[]
+	offdiagterms = AbstractQuadraticTerm[]
+	varstring2index = Dict{Any, Int}()
+	i2varstring = Dict{Int, AbstractString}()
+	var2i(var) = varstring2index[string(var)]
+	varindex = 1
+	for term in m.terms
+		if isa(term, AbstractLinearTerm)
+			push!(diagterms, term)
+			if !haskey(varstring2index, string(term.var))
+				varstring2index[string(term.var)] = varindex
+				i2varstring[varindex] = string(term.var)
+				varindex += 1
+			end
+		elseif isa(term, AbstractQuadraticTerm)
+			push!(offdiagterms, term)
+			if !haskey(varstring2index, string(term.var1))
+				varstring2index[string(term.var1)] = varindex
+				i2varstring[varindex] = string(term.var1)
+				varindex += 1
+			end
+			if !haskey(varstring2index, string(term.var2))
+				varstring2index[string(term.var2)] = varindex
+				i2varstring[varindex] = string(term.var2)
+				varindex += 1
+			end
+		end
+	end
+	numvars = length(varstring2index)
+	a = zeros(numvars)
+	b = zeros(numvars, numvars)
+	for term in m.terms
+		if isa(term, AbstractLinearTerm)
+			a[var2i(term.var)] += term.realcoeff
+		elseif isa(term, AbstractQuadraticTerm)
+			i = min(var2i(term.var1), var2i(term.var2))
+			j = max(var2i(term.var1), var2i(term.var2))
+			b[i, j] += term.realcoeff
+		end
+	end
+	f = open(filename, "w")
+	write(f, "p qubo 0 $(numvars) $(length(diagterms)) $(length(offdiagterms))\n")
+	for i = 1:length(a)
+		if a[i] != 0
+			inn = i - 1
+			write(f, "c $(i2varstring[i])\n")
+			write(f, "$inn $inn $(a[i])\n")
+		end
+	end
+	for i = 1:size(b, 1)
+		for j= 1:i - 1
+			if b[j, i] != 0
+				inn = i - 1
+				jnn = j - 1
+				write(f, "c $(i2varstring[j]) * $(i2varstring[i])\n")
+				write(f, "$jnn $inn $(b[j, i])\n")
+			end
+		end
+	end
+	close(f)
+	return i2varstring
+end
+
+function qbsolv!(m::Model; minval=0, S=0, showoutput=false, paramvals...)
+	paramdict = Dict(paramvals)
+	collectterms!(m, paramdict)
+	i2varstring = writeqbsolvfile(m, m.name * ".qbsolvin", paramdict)
+	output = readlines(`bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") -S$S -T $minval -v2"`)
+	solutionline = 2
+	while !contains(output[solutionline - 1], "Number of bits in solution")
+		solutionline += 1
+	end
+	#@show output
+	if showoutput
+		for line in output
+			print(line)
+		end
+	end
+	bitsolution = map(b->parse(Int, b), collect(output[solutionline][1:end - 1]))
+	for i = 1:length(i2varstring)
+		fullvarname = i2varstring[i]
+		splitvarname = split(fullvarname, "___")
+		for j = 1:length(m.vars)
+			if splitvarname[1] == string(m.vars[j].name)
+				value = bitsolution[i]
+				if length(splitvarname) == 1
+					m.vars[j].value = value
+				else
+					indices = map(i->parse(Int, i), splitvarname[2:end])
+					m.vars[j].value[indices...] = value
+				end
+			end
+		end
+	end
+
 end
 
 function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
