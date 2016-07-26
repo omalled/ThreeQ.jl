@@ -1,6 +1,7 @@
 using ToQ
 
-model = ToQ.Model("factor_model", "laptop", "c4-sw_sample", "workingdir", "c4")
+#model = ToQ.Model("factor_model", "laptop", "c4-sw_sample", "workingdir", "c4")
+model = ToQ.Model("factor_model", "online", "DW2X_SYS4", "workingdir", "asdf")
 
 numbits = 3
 
@@ -23,17 +24,17 @@ for i = 1:numbits
 		#make n1 * n2 = N
 		for i2 = 1:numbits
 			for j2 = 1:numbits
-				@addterm model factor * 2 ^ (i + j + i2 + j2) * s[i, j] * s[i2, j2]
+				@addterm model factor * 2 ^ (i + j + i2 + j2 - 4) * s[i, j] * s[i2, j2]
 			end
 		end
-		@addterm model factor * -2 * 2 ^ (i + j) * N * s[i, j]
+		@addterm model factor * -2 * 2 ^ (i + j - 2) * N * s[i, j]
 	end
 end
 
 
 #solve the system
 numreads = 10 ^ 4
-@time ToQ.solve!(model; factor=100, ancillary=10, param_chain=1, numreads=numreads, doembed=true)
+@time ToQ.solve!(model; factor=1, ancillary=10, param_chain=1, numreads=numreads, doembed=true)
 
 #load the solutions
 i = 1
