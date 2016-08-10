@@ -271,15 +271,20 @@ function qbsolv!(m::Model; minval=false, S=0, showoutput=false, paramvals...)
 	collectterms!(m, paramdict)
 	i2varstring = writeqbsolvfile(m, m.name * ".qbsolvin", paramdict)
 	if minval != false
-		output = readlines(`bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") -S$S -T $minval -v4"`)
+		targetstring = "-T $minval"
 	else
-		output = readlines(`bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") -S$S -v4"`)
+		targetstring = ""
 	end
+	if S == false
+		Sstring = ""
+	else
+		Sstring = "-S$S"
+	end
+	output = readlines(`bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") $Sstring $targetstring -v4"`)
 	solutionline = length(output)
 	while !contains(output[solutionline - 1], "Number of bits in solution")
 		solutionline -= 1
 	end
-	#@show output
 	if showoutput
 		for line in output
 			print(line)
