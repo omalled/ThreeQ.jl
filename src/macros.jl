@@ -59,10 +59,12 @@ macro addquadratic(model, quadexpr)
 			code = :()
 			productants = Any[]
 			for i = 2:length(innerexpr.args)
-				if (typeof(innerexpr.args[i]) == Expr && innerexpr.args[i].head == :ref) || isa(innerexpr.args[i], Number)
+				if (typeof(innerexpr.args[i]) == Expr && innerexpr.args[i].head == :ref) || isa(innerexpr.args[i], Number) || isa(innerexpr.args[i], Symbol)
 					push!(productants, Any[innerexpr.args[i]])
-				else
+				elseif innerexpr.args[i].head == :call && innerexpr.args[i].args[1] == :*
 					push!(productants, innerexpr.args[i].args[2:end])
+				else
+					error("unsupported term in quadratic: $(innerexpr.args[i])")
 				end
 			end
 			for i = 1:length(productants)

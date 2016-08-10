@@ -56,3 +56,7 @@ end
 @addquadratic model (@blah 1) ^ 2
 @test model.terms[8].realcoeff == 1.
 @test model.terms[8].var == q
+
+x = [1, 2]
+@test_throws ErrorException eval(macroexpand(:(@addquadratic model (q + -x[1]) ^ 2)))#the -x[1] isn't supported, and it used to silently do the wrong thing
+:passed

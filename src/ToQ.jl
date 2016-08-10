@@ -244,7 +244,7 @@ function writeqbsolvfile(m::Model, filename, paramdict)
 		end
 	end
 	f = open(filename, "w")
-	write(f, "p qubo 0 $(numvars) $(length(diagterms)) $(length(offdiagterms))\n")
+	write(f, "p qubo 0 $(numvars) $(sum(a .!= 0)) $(sum(b .!= 0))\n")
 	for i = 1:length(a)
 		if a[i] != 0
 			inn = i - 1
@@ -266,14 +266,18 @@ function writeqbsolvfile(m::Model, filename, paramdict)
 	return i2varstring
 end
 
-function qbsolv!(m::Model; minval=0, S=0, showoutput=false, paramvals...)
+function qbsolv!(m::Model; minval=false, S=0, showoutput=false, paramvals...)
 	paramdict = Dict(paramvals)
 	collectterms!(m, paramdict)
 	i2varstring = writeqbsolvfile(m, m.name * ".qbsolvin", paramdict)
-	output = readlines(`bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") -S$S -T $minval -v2"`)
-	solutionline = 2
+	if minval != false
+		output = readlines(`bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") -S$S -T $minval -v4"`)
+	else
+		output = readlines(`bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") -S$S -v4"`)
+	end
+	solutionline = length(output)
 	while !contains(output[solutionline - 1], "Number of bits in solution")
-		solutionline += 1
+		solutionline -= 1
 	end
 	#@show output
 	if showoutput
@@ -353,6 +357,30 @@ end
 
 function getnumsolutions(model)
 	return length(model.bitsolutions)
+end
+
+function evalvar(var, vardict::Associative)
+	return vardict[var.name]
+end
+
+function evalvar(varref::VarRef, vardict::Associative)
+	return vardict[varref.v.name][varref.args...]
+end
+
+function evalqubo!(m::Model; kwargs...)
+	kwdict = Dict(kwargs)
+	collectterms!(m, kwdict)
+	val = 0.
+	for term in m.terms
+		if isa(term, LinearTerm)
+			val += term.realcoeff * evalvar(term.var, kwdict)
+		elseif isa(term, QuadraticTerm)
+			val += term.realcoeff * evalvar(term.var1, kwdict) * evalvar(term.var2, kwdict)
+		else
+			error("innapproprate term type: $(typeof(term))")
+		end
+	end
+	return val
 end
 
 end
