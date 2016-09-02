@@ -1,1 +1,6 @@
 *sol_*
+*.b
+*.q
+*.embedding_info
+*.qbsolvin
+*.bash
