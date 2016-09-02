@@ -280,7 +280,7 @@ function qbsolv!(m::Model; minval=false, S=0, showoutput=false, paramvals...)
 	else
 		Sstring = "-S$S"
 	end
-	qbsolvcommand = `bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") $Sstring $targetstring -v4"`
+	qbsolvcommand = `bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") $Sstring $targetstring -v1"`
 	output = readlines(qbsolvcommand)
 	solutionline = length(output)
 	while !contains(output[solutionline - 1], "Number of bits in solution")
