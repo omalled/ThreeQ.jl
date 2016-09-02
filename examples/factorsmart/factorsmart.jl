@@ -127,9 +127,9 @@ function test(numbits, S=0)
 	for n in sort(unique(ns))
 		n1, n2 = factorgeneral(n, Val{numbits})
 		if n1 * n2 == n
-			println("success: $n1 * $n2 == $n")
+			println("success: $n1 * $n2 == $n ($numbits bit factorization)")
 		else
-			println("failure: $n1 * $n2 != $n")
+			println("failure: $n1 * $n2 != $n ($numbits bit factorization)")
 		end
 	end
 end

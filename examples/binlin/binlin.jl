@@ -36,6 +36,7 @@ end
 #solve the equation A*x=b where x is a binary vector
 function binlin(A, b; eqscalingval=1 / 8, numreads=1000)
 	model = ToQ.Model("binlin_model", "laptop", "c4-sw_sample", "binlin", "c4")
+	#model = ToQ.Model("binlin_model", "online", "DW2X_SYS4", "binlin", "asdf")
 	@defparam model eqscaling
 	@defvar model x[1:size(A, 2)]
 	#set up each equation

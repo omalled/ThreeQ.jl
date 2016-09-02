@@ -49,12 +49,12 @@ function factor(N, numbits; factor_weightval=1, ancillaryval=1, S=20, showoutput
 	return n1val, n2val
 end
 
-Ns = [35, 143]#, 899]#, 3599]
+Ns = [35, 143]#, 899, 3599]
 for i = 1:length(Ns)
 	N = Ns[i]
 	numbits = i + 2
-	@show N
 	@time n1, n2 = factor(N, numbits; S=0, showoutput=false)
+	#@time n1, n2 = factor(N, numbits; S=0, showoutput=false, connection="online", solver="DW2X_SYS4", workspace="sys4")
 	if n1 * n2 != N
 		error("factoring not performed correctly: $N != $n1 * $n2")
 	else
