@@ -1,12 +1,13 @@
 module ToQ
 
-export @defparam, @defvar, @addterm, @addquadratic, @loadsolution
+export @defparam, @defvar, @addterm, @addquadratic, @loadsolution, DWQMI
 
 import Base.getindex
 import Base.string
 import Base.length
 import Base.==
 
+include("DWQMI.jl")
 include("types.jl")
 include("macros.jl")
 
@@ -202,7 +203,7 @@ function collectterms!(m::Model)
 	m.terms = newterms
 end
 
-function writeqbsolvfile(m::Model, filename, paramdict)
+function model2ab(m::Model)
 	diagterms = AbstractLinearTerm[]
 	offdiagterms = AbstractQuadraticTerm[]
 	varstring2index = Dict{Any, Int}()
@@ -243,6 +244,11 @@ function writeqbsolvfile(m::Model, filename, paramdict)
 			b[i, j] += term.realcoeff
 		end
 	end
+	return a, b, i2varstring, numvars
+end
+
+function writeqbsolvfile(m::Model, filename)
+	a, b, i2varstring, numvars = model2ab(m)
 	f = open(filename, "w")
 	write(f, "p qubo 0 $(numvars) $(sum(a .!= 0)) $(sum(b .!= 0))\n")
 	for i = 1:length(a)
@@ -266,10 +272,66 @@ function writeqbsolvfile(m::Model, filename, paramdict)
 	return i2varstring
 end
 
+function model2sapiQ(m::Model)
+	a, b, i2varstring, numvars = model2ab(m)
+	Q = Dict()
+	for i = 1:length(a)
+		if a[i] != 0
+			inn = i - 1
+			Q[(inn, inn)] = a[i]
+		end
+	end
+	for i = 1:size(b, 1)
+		for j= 1:i - 1
+			if b[j, i] != 0
+				inn = i - 1
+				jnn = j - 1
+				Q[(jnn, inn)] = b[j, i]
+			end
+		end
+	end
+	return Q, i2varstring, numvars
+end
+
+function rescale(h, j, maxh, maxj)
+	j = deepcopy(j)
+	hfactor = maxh / maximum(h)
+	h *= hfactor
+	for key in keys(j)
+		j[key] *= hfactor
+	end
+	if any(x->abs(x) > maxj, values(j))
+		jfactor = maxj / maximum(map(abs, values(j)))
+		h *= hfactor
+		for key in keys(j)
+			j[key] *= hfactor
+		end
+	end
+	return h, j
+end
+
+function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), auto_scale=true, kwargs...)
+	paramdict = Dict(kwargs)
+	collectterms!(m, paramdict)
+	Q, i2varstring, numvars = model2sapiQ(m)
+	embeddings = DWQMI.findembeddings(Q, adjacency)
+	if length(embeddings) == 0
+		error("embedding failed")
+	end
+	h, j, jc, newembeddings, energyshift = DWQMI.embedproblem(Q, embeddings, adjacency)
+	if auto_scale
+		h, j = rescale(h, j, maxh, maxj)
+	end
+	embeddedanswer = DWQMI.solveising(h, j, solver; auto_scale=false, kwargs...)
+	isinganswer = DWQMI.unembedanswer(embeddedanswer["solutions"], newembeddings; kwargs...)
+	quboanswer = map(x->.5 * (x + 1), isinganswer)
+	return quboanswer, embeddedanswer
+end
+
 function qbsolv!(m::Model; minval=false, S=0, showoutput=false, paramvals...)
 	paramdict = Dict(paramvals)
 	collectterms!(m, paramdict)
-	i2varstring = writeqbsolvfile(m, m.name * ".qbsolvin", paramdict)
+	i2varstring = writeqbsolvfile(m, m.name * ".qbsolvin")
 	if minval != false
 		targetstring = "-T $minval"
 	else
