@@ -114,9 +114,8 @@ type Model
 	occurrences::Array{Int32, 1}
 	valid::Array{Bool, 1}
 	embedding::Dict
-	numqubits::Int
 end
 
 function Model(name, connection, solver, workingdir, workspace)
-	return Model(name, connection, solver, workingdir, workspace, Array(Symbol, 0), Array(Symbol, 0), Array(Expr, 0), Array{Int32, 1}[], Float64[], Int32[], Bool[], Dict(), -1)
+	return Model(name, connection, solver, workingdir, workspace, Array(Symbol, 0), Array(Symbol, 0), Array(Expr, 0), Array{Int32, 1}[], Float64[], Int32[], Bool[], Dict())
 end

@@ -131,18 +131,15 @@ function parseembedding(filename)
 	lines = readlines(f)
 	close(f)
 	embedding = Dict()
-	numqubits = -1
 	for line in lines
 		if startswith(line, "VAR")
 			paramname = split(chomp(line), "\"")[2]
 			qsstring = split(chomp(line), ":")[2]
 			qstrings = split(qsstring)
 			embedding[paramname] = map(x->parse(Int, x[2:end]) + 1, qstrings)
-		elseif contains(line, "qubits used=")
-			numqubits = parse(Int, split(line, "=")[2])
 		end
 	end
-	return embedding, numqubits
+	return embedding
 end
 
 function varset(t::LinearTerm)
@@ -296,21 +293,16 @@ end
 function rescale(h, j, maxh, maxj)
 	j = deepcopy(j)
 	hfactor = maxh / maximum(h)
-	h *= hfactor
+	jfactor = maxj / maximum(map(abs, values(j)))
+	goodfactor = min(hfactor, jfactor)
+	h *= goodfactor
 	for key in keys(j)
-		j[key] *= hfactor
-	end
-	if any(x->abs(x) > maxj, values(j))
-		jfactor = maxj / maximum(map(abs, values(j)))
-		h *= hfactor
-		for key in keys(j)
-			j[key] *= hfactor
-		end
+		j[key] *= goodfactor
 	end
 	return h, j
 end
 
-function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), auto_scale=true, kwargs...)
+function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain=1, auto_scale=true, kwargs...)
 	paramdict = Dict(kwargs)
 	collectterms!(m, paramdict)
 	Q, i2varstring, numvars = model2sapiQ(m)
@@ -318,14 +310,19 @@ function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjace
 	if length(embeddings) == 0
 		error("embedding failed")
 	end
-	h, j, jc, newembeddings, energyshift = DWQMI.embedproblem(Q, embeddings, adjacency)
+	h, j, newembeddings, energyshift = DWQMI.embedproblem(Q, embeddings, adjacency; param_chain=param_chain)
 	if auto_scale
 		h, j = rescale(h, j, maxh, maxj)
 	end
 	embeddedanswer = DWQMI.solveising(h, j, solver; auto_scale=false, kwargs...)
-	isinganswer = DWQMI.unembedanswer(embeddedanswer["solutions"], newembeddings; kwargs...)
-	quboanswer = map(x->.5 * (x + 1), isinganswer)
-	return quboanswer, embeddedanswer
+	embeddedqubosolutions = map(x->x == -1 ? 0 : x == 1 ? 1 : 3, embeddedanswer["solutions"])
+	unembeddedisingsolutions = DWQMI.unembedanswer(embeddedanswer["solutions"], newembeddings; kwargs...)
+	m.embedding = Dict(zip(map(i->i2varstring[i], 1:size(unembeddedisingsolutions, 2)), map(i->[newembeddings[i]...] + 1, 1:size(unembeddedisingsolutions, 2))))
+	m.bitsolutions = map(i->vec(embeddedqubosolutions[i, :]), 1:size(embeddedqubosolutions, 1))
+	m.energies = map(x->0., 1:size(embeddedqubosolutions, 1))#TODO compute the energies
+	m.occurrences = map(x->convert(Int32, x), embeddedanswer["num_occurrences"])
+	fillvalid!(m)
+	return embeddedanswer, newembeddings, j
 end
 
 function qbsolv!(m::Model; minval=false, S=0, showoutput=false, paramvals...)
@@ -369,8 +366,24 @@ function qbsolv!(m::Model; minval=false, S=0, showoutput=false, paramvals...)
 			end
 		end
 	end
-
 end
+
+function fillvalid!(m::Model)
+	m.valid = Array(Bool, length(m.bitsolutions))
+	for j = 1:length(m.valid)
+		m.valid[j] = true
+		for k in keys(m.embedding)
+			firstbit = m.bitsolutions[j][m.embedding[k][1]]
+			for i in m.embedding[k]
+				thisbit = m.bitsolutions[j][i]
+				if firstbit != thisbit || (thisbit != 1 && thisbit != 0)
+					m.valid[j] = false
+				end
+			end
+		end
+	end
+end
+
 
 function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
 	collectterms!(m)
@@ -402,21 +415,9 @@ function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
 	end
 	close(bashscript)
 	run(`bash $(m.name).bash`)
-	m.embedding, m.numqubits = parseembedding("$(m.name).embedding_info")
+	m.embedding = parseembedding("$(m.name).embedding_info")
 	m.bitsolutions, m.energies, m.occurrences = readsol(joinpath(ENV["DWAVE_HOME"], string("workspace.", m.workspace), m.workingdir, string(m.name, ".sol")))
-	m.valid = Array(Bool, length(m.bitsolutions))
-	for j = 1:length(m.valid)
-		m.valid[j] = true
-		for k in keys(m.embedding)
-			firstbit = m.bitsolutions[j][m.embedding[k][1]]
-			for i in m.embedding[k]
-				thisbit = m.bitsolutions[j][i]
-				if firstbit != thisbit || (thisbit != 1 && thisbit != 0)
-					m.valid[j] = false
-				end
-			end
-		end
-	end
+	fillvalid!(m)
 	if removefiles
 		run(`rm $(m.name).bash`)
 		run(`rm $(m.name).embedding_info`)

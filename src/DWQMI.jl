@@ -45,10 +45,16 @@ function qubo2ising(Q)
 	return h, j, energyshift
 end
 
-function embedproblem(Q, embeddings, adjacency=defaultadjacency)
+function embedproblem(Q, embeddings, adjacency=defaultadjacency; param_chain=1)
+	jparamchain = -param_chain
 	h, j, energyshift = qubo2ising(Q)
 	newh, newj, jc, newembeddings = dwembed.embed_problem(h, j, embeddings, adjacency)
-	return newh, newj, jc, newembeddings, energyshift
+	for k in keys(jc)
+		if jc[k] == -1
+			newj[k] = jparamchain
+		end
+	end
+	return newh, newj, newembeddings, energyshift
 end
 
 function unembedanswer(solutions, embeddings; broken_chains="weighted_random", kwargs...)
