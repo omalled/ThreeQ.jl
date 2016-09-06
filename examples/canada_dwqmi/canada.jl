@@ -46,11 +46,8 @@ for j = 1:length(provinces)
 end
 
 #solve the system
-#ToQ.solve!(model; color=1, neighbor=5, param_chain=2, numreads=100, doembed=true)
-mytoken = "lanl-336e728c39db87ae4d4407a196d05a1950532fe1"
-sys4 = DWQMI.getdw2xsys4(mytoken); solver = sys4
-#solver = DWQMI.defaultsolver
-embeddedanswer, embeddings, j0 = ToQ.solvesapi!(model; solver=solver, color=2, neighbor=5, param_chain=2, num_reads=100, auto_scale=true)
+solver = DWQMI.defaultsolver
+embeddedanswer, embeddings, j0 = ToQ.solvesapi!(model; solver=solver, color=1, neighbor=5, param_chain=4, num_reads=100, auto_scale=false)
 
 #load the solutions
 i = 1
