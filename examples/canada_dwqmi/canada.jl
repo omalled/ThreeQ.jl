@@ -47,7 +47,7 @@ end
 
 #solve the system
 solver = DWQMI.defaultsolver
-embeddedanswer, embeddings, j0 = ToQ.solvesapi!(model; solver=solver, color=1, neighbor=5, param_chain=4, num_reads=100, auto_scale=false)
+ToQ.solvesapi!(model; solver=solver, color=1, neighbor=5, param_chain=4, num_reads=100, auto_scale=false)
 
 #load the solutions
 i = 1

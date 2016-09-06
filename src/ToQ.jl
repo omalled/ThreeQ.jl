@@ -319,10 +319,9 @@ function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjace
 	unembeddedisingsolutions = DWQMI.unembedanswer(embeddedanswer["solutions"], newembeddings; kwargs...)
 	m.embedding = Dict(zip(map(i->i2varstring[i], 1:size(unembeddedisingsolutions, 2)), map(i->[newembeddings[i]...] + 1, 1:size(unembeddedisingsolutions, 2))))
 	m.bitsolutions = map(i->vec(embeddedqubosolutions[i, :]), 1:size(embeddedqubosolutions, 1))
-	m.energies = map(x->0., 1:size(embeddedqubosolutions, 1))#TODO compute the energies
+	m.energies = zeros(size(embeddedqubosolutions, 1))
 	m.occurrences = map(x->convert(Int32, x), embeddedanswer["num_occurrences"])
 	fillvalid!(m)
-	return embeddedanswer, newembeddings, j
 end
 
 function qbsolv!(m::Model; minval=false, S=0, showoutput=false, paramvals...)
