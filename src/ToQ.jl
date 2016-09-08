@@ -5,11 +5,15 @@ export @defparam, @defvar, @addterm, @addquadratic, @loadsolution, DWQMI
 import Base.getindex
 import Base.string
 import Base.length
+import Base.size
 import Base.==
 
 include("DWQMI.jl")
 include("types.jl")
 include("macros.jl")
+
+size(v::Var, args...) = size(v.value, args...)
+length(v::Var) = length(v.value)
 
 function ==(x::VarRef, y::VarRef)
 	return x.v == y.v && x.args == y.args
@@ -302,7 +306,7 @@ function rescale(h, j, maxh, maxj)
 	return h, j
 end
 
-function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain=1, auto_scale=true, kwargs...)
+function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain=1, auto_scale=false, kwargs...)
 	paramdict = Dict(kwargs)
 	collectterms!(m, paramdict)
 	Q, i2varstring, numvars = model2sapiQ(m)
@@ -320,6 +324,13 @@ function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjace
 	m.embedding = Dict(zip(map(i->i2varstring[i], 1:size(unembeddedisingsolutions, 2)), map(i->[newembeddings[i]...] + 1, 1:size(unembeddedisingsolutions, 2))))
 	m.bitsolutions = map(i->vec(embeddedqubosolutions[i, :]), 1:size(embeddedqubosolutions, 1))
 	m.energies = zeros(size(embeddedqubosolutions, 1))
+	for i = 1:size(embeddedqubosolutions, 1)
+		s = vec(embeddedanswer["solutions"][i, :])
+		m.energies[i] = dot(h, s)
+		for (i1, i2) in keys(j)
+			m.energies[i] += j[(i1, i2)] * s[i1 + 1] * s[i2 + 1]
+		end
+	end
 	m.occurrences = map(x->convert(Int32, x), embeddedanswer["num_occurrences"])
 	fillvalid!(m)
 end
