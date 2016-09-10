@@ -11,6 +11,7 @@ import Base.==
 include("DWQMI.jl")
 include("types.jl")
 include("macros.jl")
+include("viz.jl")
 
 size(v::Var, args...) = size(v.value, args...)
 length(v::Var) = length(v.value)
