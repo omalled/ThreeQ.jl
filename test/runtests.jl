@@ -1,7 +1,7 @@
-using ToQ
+using ThreeQ
 using Base.Test
 
-model = ToQ.Model("test_model", "laptop", "c4-sw_sample", "testdir", "c4")
+model = ThreeQ.Model("test_model", "laptop", "c4-sw_sample", "testdir", "c4")
 
 #test @defvar
 @defvar model q
@@ -22,7 +22,7 @@ model = ToQ.Model("test_model", "laptop", "c4-sw_sample", "testdir", "c4")
 
 #test @addterm
 @addterm model (1 + exp(3)) * p * q * qs[2] * 2 * pi
-@test isa(model.terms[1], ToQ.ParamQuadraticTerm)
+@test isa(model.terms[1], ThreeQ.ParamQuadraticTerm)
 @test model.terms[1].realcoeff == 2 * (1 + exp(3)) * pi
 @test model.terms[1].param == p
 @test model.terms[1].var1 == q
@@ -30,7 +30,7 @@ model = ToQ.Model("test_model", "laptop", "c4-sw_sample", "testdir", "c4")
 
 #test @addquadratic
 @addquadratic model q ^ 2
-@test isa(model.terms[2], ToQ.LinearTerm)
+@test isa(model.terms[2], ThreeQ.LinearTerm)
 @test model.terms[2].realcoeff == 1.
 @test model.terms[2].var == q
 @addquadratic model (qs[1] + -1 * qs[2]) ^ 2
@@ -50,7 +50,7 @@ end
 
 #test that you can use macros inside the expressions for terms and quadratics
 @addterm model @blah 1
-@test isa(model.terms[7], ToQ.LinearTerm)
+@test isa(model.terms[7], ThreeQ.LinearTerm)
 @test model.terms[7].realcoeff == 1.
 @test model.terms[7].var == q
 @addquadratic model (@blah 1) ^ 2

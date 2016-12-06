@@ -1,6 +1,6 @@
-using ToQ
+using ThreeQ
 
-model = ToQ.Model("canada_model", "laptop", "c4-sw_sample", "workingdir", "c4")
+model = ThreeQ.Model("canada_model", "laptop", "c4-sw_sample", "workingdir", "c4")
 
 @defparam model color
 @defparam model neighbor
@@ -47,7 +47,7 @@ end
 
 #solve the system
 solver = DWQMI.defaultsolver
-ToQ.solvesapi!(model; solver=solver, color=1, neighbor=5, param_chain=4, num_reads=100, auto_scale=false)
+ThreeQ.solvesapi!(model; solver=solver, color=1, neighbor=5, param_chain=4, num_reads=100, auto_scale=false)
 
 #load the solutions
 i = 1
@@ -55,7 +55,7 @@ solutions = Array{Float64, 2}[]
 energies = Float64[]
 occurrences = Int[]
 valid = Bool[]
-numsolutions = ToQ.getnumsolutions(model)
+numsolutions = ThreeQ.getnumsolutions(model)
 for i = 1:numsolutions
 	@loadsolution model energy occurrencesi validi i
 	push!(solutions, copy(province_rgb.value))

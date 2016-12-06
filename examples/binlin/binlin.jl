@@ -1,4 +1,4 @@
-using ToQ
+using ThreeQ
 
 function bruteforce(A, b)
 	x = Array(Int, size(A, 2))
@@ -35,8 +35,8 @@ end
 
 #solve the equation A*x=b where x is a binary vector
 function binlin(A, b; eqscalingval=1 / 8, numreads=1000)
-	model = ToQ.Model("binlin_model", "laptop", "c4-sw_sample", "binlin", "c4")
-	#model = ToQ.Model("binlin_model", "online", "DW2X_SYS4", "binlin", "asdf")
+	model = ThreeQ.Model("binlin_model", "laptop", "c4-sw_sample", "binlin", "c4")
+	#model = ThreeQ.Model("binlin_model", "online", "DW2X_SYS4", "binlin", "asdf")
 	@defparam model eqscaling
 	@defvar model x[1:size(A, 2)]
 	#set up each equation
@@ -61,14 +61,14 @@ function binlin(A, b; eqscalingval=1 / 8, numreads=1000)
 		end
 	end
 	#solve the system
-	ToQ.solve!(model; eqscaling=eqscalingval, param_chain=1, numreads=numreads, doembed=true)
+	ThreeQ.solve!(model; eqscaling=eqscalingval, param_chain=1, numreads=numreads, doembed=true)
 	#load the solutions
 	i = 1
 	solutions = Array{Float64, 1}[]
 	energies = Float64[]
 	trueenergies = Float64[]
 	occurrences = Float64[]
-	numsolutions = ToQ.getnumsolutions(model)
+	numsolutions = ThreeQ.getnumsolutions(model)
 	for i = 1:numsolutions
 		@loadsolution model energy occurrencesi valid i
 		push!(solutions, copy(x.value))

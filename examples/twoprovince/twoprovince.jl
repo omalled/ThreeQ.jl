@@ -1,6 +1,6 @@
-using ToQ
+using ThreeQ
 
-model = ToQ.Model("modelname", "laptop", "c4-sw_sample", "workingdir", "c4")
+model = ThreeQ.Model("modelname", "laptop", "c4-sw_sample", "workingdir", "c4")
 
 @defparam model color
 @defparam model neighbor
@@ -23,14 +23,14 @@ for i = 1:3
 end
 
 #solve the system
-ToQ.solve!(model; color=1, neighbor=1, param_chain=2, numreads=100)
+ThreeQ.solve!(model; color=1, neighbor=1, param_chain=2, numreads=100)
 
 #load the solutions
 i = 1
 solutions = Array{Float64, 2}[]
 energies = Float64[]
 occurrences = Int[]
-numsolutions = ToQ.getnumsolutions(model)
+numsolutions = ThreeQ.getnumsolutions(model)
 for i = 1:numsolutions
 	@loadsolution model energy occurrencesi valid i
 	push!(solutions, copy(province_rgb.value))

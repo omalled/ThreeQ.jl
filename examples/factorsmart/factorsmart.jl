@@ -1,4 +1,4 @@
-using ToQ
+using ThreeQ
 
 function ntobits(N, numbits=ceil(Int, log2(N)))
 	bits = Array(Int, numbits)
@@ -11,7 +11,7 @@ end
 
 function factor3bit(N; connection="laptop", solver="c4-sw_sample", workspace="c4", ancillaryval=1)
 	Nbits = ntobits(N, 7)
-	m = ToQ.Model("factor_model", connection, solver, "workingdir", workspace)
+	m = ThreeQ.Model("factor_model", connection, solver, "workingdir", workspace)
 	numbits = 3
 	@defparam m ancillary
 	@defvar m n1[1:numbits]
@@ -34,7 +34,7 @@ function factor3bit(N; connection="laptop", solver="c4-sw_sample", workspace="c4
 	@addquadratic m (s[3, 3] + (2 ^ 0) * z[4, 1] + (2 ^ 1) * z[4, 2] + -(2 ^ 1) * z[5, 1] + -(2 ^ 2) * z[5, 2] + -1 * Nbits[5]) ^ 2
 	@addquadratic m ((2 ^ 0) * z[5, 1] + (2 ^ 1) * z[5, 2] + -(2 ^ 1) * z[6, 1] + -1 * Nbits[6]) ^ 2
 	@addquadratic m ((2 ^ 0) * z[6, 1] + -1 * Nbits[7]) ^ 2
-	ToQ.qbsolv!(m; minval=-sum(Nbits), ancillary=ancillaryval)
+	ThreeQ.qbsolv!(m; minval=-sum(Nbits), ancillary=ancillaryval)
 	n1val = 0
 	n2val = 0
 	for i = 1:numbits
@@ -47,7 +47,7 @@ end
 @generated function factorgeneral{numbits}(N, ::Type{Val{numbits}}; connection="laptop", solver="c4-sw_sample", workingdir="workingdir", workspace="c4", ancillaryval=1, S=0)
 	startcode = quote
 		Nbits = ntobits(N, 2 * numbits)
-		m = ToQ.Model("factor_model", connection, solver, workingdir, workspace)
+		m = ThreeQ.Model("factor_model", connection, solver, workingdir, workspace)
 		@defparam m ancillary
 		@defvar m n1[1:numbits]
 		@defvar m n2[1:numbits]
@@ -64,7 +64,7 @@ end
 		end
 	end
 	finishcode = quote
-		ToQ.qbsolv!(m; minval=-sum(Nbits), ancillary=ancillaryval, S=S)
+		ThreeQ.qbsolv!(m; minval=-sum(Nbits), ancillary=ancillaryval, S=S)
 		n1val = 0
 		n2val = 0
 		for i = 1:numbits

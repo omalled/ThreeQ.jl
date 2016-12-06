@@ -1,8 +1,8 @@
-using ToQ
+using ThreeQ
 
 function colormap(regions, neighbors, numcolors; w1=1, w2=1)
 	colornames = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"]
-	m = ToQ.Model("mapcolor", "laptop", "c4-sw_sample", "workingdir", "c4")
+	m = ThreeQ.Model("mapcolor", "laptop", "c4-sw_sample", "workingdir", "c4")
 	@defvar m colors[1:length(regions), 1:numcolors]
 	for i = 1:length(regions)
 		for j = 1:numcolors
@@ -21,7 +21,7 @@ function colormap(regions, neighbors, numcolors; w1=1, w2=1)
 			end
 		end
 	end
-	ToQ.qbsolv!(m; minval=-length(regions) * w1, S=false, showoutput=true)
+	ThreeQ.qbsolv!(m; minval=-length(regions) * w1, S=false, showoutput=true)
 	result = Dict(zip(regions, map(i->colornames[indmax(vec(colors.value[i, :]))], 1:length(regions))))
 	return result
 end

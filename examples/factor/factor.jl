@@ -1,7 +1,7 @@
-using ToQ
+using ThreeQ
 
-#model = ToQ.Model("factor_model", "laptop", "c4-sw_sample", "workingdir", "c4")
-model = ToQ.Model("factor_model", "online", "DW2X_SYS4", "workingdir", "asdf")
+#model = ThreeQ.Model("factor_model", "laptop", "c4-sw_sample", "workingdir", "c4")
+model = ThreeQ.Model("factor_model", "online", "DW2X_SYS4", "workingdir", "asdf")
 
 numbits = 3
 
@@ -34,11 +34,11 @@ end
 
 #solve the system
 numreads = 10 ^ 4
-@time ToQ.solve!(model; factor=1, ancillary=10, param_chain=1, numreads=numreads, doembed=true)
+@time ThreeQ.solve!(model; factor=1, ancillary=10, param_chain=1, numreads=numreads, doembed=true)
 
 #load the solutions
 i = 1
-numsolutions = ToQ.getnumsolutions(model)
+numsolutions = ThreeQ.getnumsolutions(model)
 successcount = 0
 for i = 1:numsolutions
 	@loadsolution model energy occurrencesi validi i

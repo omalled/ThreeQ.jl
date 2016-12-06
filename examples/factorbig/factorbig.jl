@@ -1,4 +1,4 @@
-using ToQ
+using ThreeQ
 
 import Base.factor
 
@@ -9,7 +9,7 @@ function factor(N, numbits; factor_weightval=1, ancillaryval=1, S=20, showoutput
 	#with the sums going from 1 to numbits
 
 	#set up the model
-	model = ToQ.Model("factor_model", connection, solver, "workingdir", workspace)
+	model = ThreeQ.Model("factor_model", connection, solver, "workingdir", workspace)
 
 	#set up the params and vars
 	@defparam model factor_weight
@@ -37,7 +37,7 @@ function factor(N, numbits; factor_weightval=1, ancillaryval=1, S=20, showoutput
 	end
 
 	#solve the QUBO with qbsolv
-	ToQ.qbsolv!(model; minval=-factor_weightval * N ^ 2, S=S, factor_weight=factor_weightval, ancillary=ancillaryval, showoutput=showoutput)
+	ThreeQ.qbsolv!(model; minval=-factor_weightval * N ^ 2, S=S, factor_weight=factor_weightval, ancillary=ancillaryval, showoutput=showoutput)
 
 	#translate the binary result into a couple julia Ints
 	n1val = 0

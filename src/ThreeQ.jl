@@ -1,4 +1,4 @@
-module ToQ
+module ThreeQ
 
 export @defparam, @defvar, @addterm, @addquadratic, @loadsolution, DWQMI
 
