@@ -75,7 +75,7 @@ function assemble(x::Var)
 end
 
 function assemble{T<:Vector}(x::Var{T})
-	strings = ASCIIString[]
+	strings = String[]
 	for i = 1:length(x.value)
 		push!(strings, "var: $(string(x[i]))")
 	end
@@ -83,7 +83,7 @@ function assemble{T<:Vector}(x::Var{T})
 end
 
 function assemble{T<:Matrix}(x::Var{T})
-	strings = ASCIIString[]
+	strings = String[]
 	for i = 1:size(x.value, 1)
 		for j = 1:size(x.value, 2)
 			push!(strings, "var: $(string(x[i, j]))")
@@ -393,7 +393,7 @@ function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
 	collectterms!(m)
 	writeqfile(m, m.name * ".q")
 	writebfile(args, m.name * ".b")
-	bashscriptlines = ASCIIString[]
+	bashscriptlines = String[]
 	push!(bashscriptlines, "set -e")
 	push!(bashscriptlines, "dw set connection $(m.connection)")
 	push!(bashscriptlines, "dw set solver $(m.solver)")

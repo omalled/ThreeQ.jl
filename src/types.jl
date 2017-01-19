@@ -4,7 +4,7 @@ type Param
 end
 
 function Param(s::AbstractString)
-	Param(symbol(s), NaN)
+	Param(Symbol(s), NaN)
 end
 
 type Var{T}
@@ -13,7 +13,7 @@ type Var{T}
 end
 
 function Var(s::AbstractString, value=NaN)
-	Var(symbol(s), value)
+	Var(Symbol(s), value)
 end
 
 type VarRef
@@ -101,11 +101,11 @@ function Term(args...)
 end
 
 type Model
-	name::ASCIIString
-	connection::ASCIIString
-	solver::ASCIIString
-	workingdir::ASCIIString
-	workspace::ASCIIString
+	name::String
+	connection::String
+	solver::String
+	workingdir::String
+	workspace::String
 	params::Array{Param, 1}
 	vars::Array{Var, 1}
 	terms::Array{Term, 1}
