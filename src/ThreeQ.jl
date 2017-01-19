@@ -55,6 +55,16 @@ function string(t::ParamQuadraticTerm)
 	return string(join(map(string, [t.realcoeff, t.param, t.var1, t.var2]), " * "))
 end
 
+function addlinearconstraint!(model, c::Number, coeffs::Vector, vars::Vector)
+	for i = 1:length(coeffs)
+		@addterm model -2 * c * coeffs[i] * vars[i]
+		@addterm model coeffs[i] ^ 2 * vars[i]
+		for j = 1:i - 1
+			@addterm model 2 * coeffs[i] * coeffs[j] * vars[i] * vars[j]
+		end
+	end
+end
+
 function addparam!(model, x)
 	push!(model.params, x)
 end
@@ -343,7 +353,7 @@ function qbsolv!(m::Model; minval=false, S=0, showoutput=false, paramvals...)
 	else
 		Sstring = "-S$S"
 	end
-	qbsolvcommand = `bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") $Sstring $targetstring -v1"`
+	qbsolvcommand = `bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") $Sstring $targetstring -v10"`
 	output = readlines(qbsolvcommand)
 	solutionline = length(output)
 	while !contains(output[solutionline - 1], "Number of bits in solution")
