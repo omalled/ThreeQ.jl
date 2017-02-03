@@ -13,7 +13,8 @@ include("utils.jl")
 
 const defaultsolver = dwlocal.local_connection[:get_solver]("c4-sw_sample")
 const defaultadjacency = collect(dwutil.get_hardware_adjacency(defaultsolver))
-const defaulturl = "https://dw2x.dwavesys.com/sapi/"
+#const defaulturl = "https://dw2x.dwavesys.com/sapi/"
+const defaulturl = "https://127.0.0.1:10443/sapi/"
 
 function connect(token, url=defaulturl)
 	return dwremote.RemoteConnection(url, token)
@@ -33,7 +34,7 @@ end
 
 function getdw2xsys4(token)
 	connection = connect(token)
-	return getremotesolver(connection, "DW2X_SYS4")
+	return getremotesolver(connection, "DW2X")
 end
 
 function findembeddings(Q, adjacency=defaultadjacency)
@@ -98,13 +99,26 @@ function solvequbo(Q, solver=defaultsolver; fixvars=false, auto_scale=true, kwar
 	end
 end
 
-function solveising(h, j, solver=defaultsolver; kwargs...)
+function asyncsolveising(h, j, solver=defaultsolver; kwargs...)
 	if solver == defaultsolver
 		validkws = [:annealing_time, :answer_mode, :beta, :chains, :max_answers, :num_reads, :num_spin_reversal_transforms, :postprocess, :programming_thermalization, :readout_thermalization]
 	else
 		validkws = [:annealing_time, :answer_mode, :auto_scale, :beta, :chains, :max_answers, :num_reads, :num_spin_reversal_transforms, :postprocess, :programming_thermalization, :readout_thermalization]
 	end
-	return dwcore.solve_ising(solver, h, j; validkwargs(kwargs, validkws)...)
+	p1 = dwcore.async_solve_ising(solver, h, j; validkwargs(kwargs, validkws)...)
+	return p1
+end
+
+function solveising(h, j, solver=defaultsolver; kwargs...)
+	p1 = asyncsolveising(h, j, solver; kwargs...)
+	min_done = 1
+	timeout = 60
+	done = dwcore.await_completion([p1], min_done, timeout)
+	if done
+		return p1[:result]()
+	else
+		error("timed out awaiting solve_ising...or something: done=$done")
+	end
 end
 
 end

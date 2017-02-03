@@ -307,7 +307,7 @@ end
 
 function rescale(h, j, maxh, maxj)
 	j = deepcopy(j)
-	hfactor = maxh / maximum(h)
+	hfactor = maxh / maximum(abs.(h))
 	jfactor = maxj / maximum(map(abs, values(j)))
 	goodfactor = min(hfactor, jfactor)
 	h *= goodfactor
@@ -317,11 +317,30 @@ function rescale(h, j, maxh, maxj)
 	return h, j
 end
 
-function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain=1, auto_scale=false, kwargs...)
+saved_embeddings = Dict()
+
+function findembeddings(Q, adjacency, reuse_embedding)
+	global embeddings
+	k = (Set(keys(Q)), Set(collect(adjacency)))
+	if reuse_embedding
+		if k in keys(saved_embeddings)
+			embeddings = saved_embeddings[k]
+		else
+			reuse_embedding = false
+		end
+	end
+	if !reuse_embedding
+		embeddings = DWQMI.findembeddings(Q, adjacency)
+		saved_embeddings[k] = embeddings
+	end
+	return embeddings
+end
+
+function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain=1, auto_scale=false, reuse_embedding=false, async=false, kwargs...)
 	paramdict = Dict(kwargs)
 	collectterms!(m, paramdict)
 	Q, i2varstring, numvars = model2sapiQ(m)
-	embeddings = DWQMI.findembeddings(Q, adjacency)
+	embeddings = findembeddings(Q, adjacency, reuse_embedding)
 	if length(embeddings) == 0
 		error("embedding failed")
 	end
@@ -329,7 +348,20 @@ function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjace
 	if auto_scale
 		h, j = rescale(h, j, maxh, maxj)
 	end
-	embeddedanswer = DWQMI.solveising(h, j, solver; auto_scale=false, kwargs...)
+	p1 = DWQMI.asyncsolveising(h, j, solver; auto_scale=false, kwargs...)
+	if !async
+		finishsolve!(m, p1, newembeddings, i2varstring; kwargs...)
+	end
+	return p1, newembeddings, i2varstring
+end
+
+function finishsolve!(m, p1, newembeddings, i2varstring; timeout=60, kwargs...)
+	done = DWQMI.dwcore.await_completion([p1], 1, timeout)
+	if done
+		embeddedanswer = p1[:result]()
+	else
+		error("timed out awaiting solve_ising...or something: done=$done")
+	end
 	embeddedqubosolutions = map(x->x == -1 ? 0 : x == 1 ? 1 : 3, embeddedanswer["solutions"])
 	unembeddedisingsolutions = DWQMI.unembedanswer(embeddedanswer["solutions"], newembeddings; kwargs...)
 	m.embedding = Dict(zip(map(i->i2varstring[i], 1:size(unembeddedisingsolutions, 2)), map(i->[newembeddings[i]...] + 1, 1:size(unembeddedisingsolutions, 2))))
@@ -355,6 +387,7 @@ function qbsolv!(m::Model; minval=false, S=0, showoutput=false, paramvals...)
 	end
 	qbsolvcommand = `bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") $Sstring $targetstring -v10"`
 	output = readlines(qbsolvcommand)
+	rm(m.name * ".qbsolvin")
 	solutionline = length(output)
 	while !contains(output[solutionline - 1], "Number of bits in solution")
 		solutionline -= 1
@@ -398,8 +431,7 @@ function fillvalid!(m::Model)
 	end
 end
 
-
-function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
+function solve!(m::Model; doembed=true, removefiles=false, numreads=10, showoutput=false, args...)
 	collectterms!(m)
 	writeqfile(m, m.name * ".q")
 	writebfile(args, m.name * ".b")
@@ -428,7 +460,13 @@ function solve!(m::Model; doembed=true, removefiles=false, numreads=10, args...)
 		write(bashscript, string(line, "\n"))
 	end
 	close(bashscript)
-	run(`bash $(m.name).bash`)
+	#run(`bash $(m.name).bash`)
+	output = readlines(`bash $(m.name).bash`)
+	if showoutput
+		for line in output
+			print(line)
+		end
+	end
 	m.embedding = parseembedding("$(m.name).embedding_info")
 	m.bitsolutions, m.energies, m.occurrences = readsol(joinpath(ENV["DWAVE_HOME"], string("workspace.", m.workspace), m.workingdir, string(m.name, ".sol")))
 	fillvalid!(m)
