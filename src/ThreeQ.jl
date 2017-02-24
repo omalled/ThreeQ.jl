@@ -9,6 +9,7 @@ import Base.size
 import Base.==
 
 include("DWQMI.jl")
+include("json.jl")
 include("types.jl")
 include("macros.jl")
 include("viz.jl")
@@ -336,7 +337,7 @@ function findembeddings(Q, adjacency, reuse_embedding)
 	return embeddings
 end
 
-function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain=1, auto_scale=false, reuse_embedding=false, async=false, kwargs...)
+function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain_factor=false, param_chain=1, auto_scale=false, reuse_embedding=false, async=false, timeout=60, kwargs...)
 	paramdict = Dict(kwargs)
 	collectterms!(m, paramdict)
 	Q, i2varstring, numvars = model2sapiQ(m)
@@ -344,24 +345,26 @@ function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjace
 	if length(embeddings) == 0
 		error("embedding failed")
 	end
+	if param_chain_factor != false
+		param_chain = param_chain_factor * maximum(values(Q))
+	end
 	h, j, newembeddings, energyshift = DWQMI.embedproblem(Q, embeddings, adjacency; param_chain=param_chain)
 	if auto_scale
 		h, j = rescale(h, j, maxh, maxj)
 	end
 	p1 = DWQMI.asyncsolveising(h, j, solver; auto_scale=false, kwargs...)
 	if !async
+		done = DWQMI.dwcore.await_completion([p1], 1, timeout)
+		if !done
+			error("timed out awaiting solve_ising...or something: done=$done")
+		end
 		finishsolve!(m, p1, newembeddings, i2varstring; kwargs...)
 	end
 	return p1, newembeddings, i2varstring
 end
 
-function finishsolve!(m, p1, newembeddings, i2varstring; timeout=60, kwargs...)
-	done = DWQMI.dwcore.await_completion([p1], 1, timeout)
-	if done
-		embeddedanswer = p1[:result]()
-	else
-		error("timed out awaiting solve_ising...or something: done=$done")
-	end
+function finishsolve!(m, p1, newembeddings, i2varstring; url="https://localhost:10443/sapi/", token="", kwargs...)
+	embeddedanswer = getanswer(p1[:status]()["problem_id"], token, url)
 	embeddedqubosolutions = map(x->x == -1 ? 0 : x == 1 ? 1 : 3, embeddedanswer["solutions"])
 	unembeddedisingsolutions = DWQMI.unembedanswer(embeddedanswer["solutions"], newembeddings; kwargs...)
 	m.embedding = Dict(zip(map(i->i2varstring[i], 1:size(unembeddedisingsolutions, 2)), map(i->[newembeddings[i]...] + 1, 1:size(unembeddedisingsolutions, 2))))
@@ -371,11 +374,11 @@ function finishsolve!(m, p1, newembeddings, i2varstring; timeout=60, kwargs...)
 	fillvalid!(m)
 end
 
-function qbsolv!(m::Model; minval=false, S=0, showoutput=false, paramvals...)
+function qbsolv!(m::Model; minval=nothing, S=0, showoutput=false, paramvals...)
 	paramdict = Dict(paramvals)
 	collectterms!(m, paramdict)
 	i2varstring = writeqbsolvfile(m, m.name * ".qbsolvin")
-	if minval != false
+	if minval != nothing
 		targetstring = "-T $minval"
 	else
 		targetstring = ""
