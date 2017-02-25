@@ -365,13 +365,13 @@ end
 
 function finishsolve!(m, p1, newembeddings, i2varstring; url="https://localhost:10443/sapi/", token="", kwargs...)
 	embeddedanswer = getanswer(p1[:status]()["problem_id"], token, url)
-	embeddedqubosolutions = map(x->x == -1 ? 0 : x == 1 ? 1 : 3, embeddedanswer["solutions"])
+	embeddedqubosolutions = map(x->x == -1 ? 0 : x == 1 ? 1 : 3, embeddedanswer["solutions"]::Array{Int, 2})
 	unembeddedisingsolutions = DWQMI.unembedanswer(embeddedanswer["solutions"], newembeddings; kwargs...)
 	m.embedding = Dict(zip(map(i->i2varstring[i], 1:size(unembeddedisingsolutions, 2)), map(i->[newembeddings[i]...] + 1, 1:size(unembeddedisingsolutions, 2))))
 	m.bitsolutions = map(i->vec(embeddedqubosolutions[i, :]), 1:size(embeddedqubosolutions, 1))
 	m.energies = embeddedanswer["energies"]
 	m.occurrences = map(x->convert(Int32, x), embeddedanswer["num_occurrences"])
-	fillvalid!(m)
+	fillvalid!(m, embeddedanswer["solutions"], newembeddings)
 end
 
 function qbsolv!(m::Model; minval=nothing, S=0, showoutput=false, paramvals...)
@@ -413,6 +413,18 @@ function qbsolv!(m::Model; minval=nothing, S=0, showoutput=false, paramvals...)
 					indices = map(i->parse(Int, i), splitvarname[2:end])
 					m.vars[j].value[indices...] = value
 				end
+			end
+		end
+	end
+end
+
+function fillvalid!(m::Model, solutions, embeddings)
+	m.valid = fill(true, size(solutions, 1))
+	for j = 1:size(solutions, 1)
+		for i = 2:length(embeddings)
+			if solutions[j, i] != solutions[j, 1]
+				m.valid[j] = false
+				break
 			end
 		end
 	end
