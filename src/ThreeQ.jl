@@ -2,6 +2,8 @@ module ThreeQ
 
 export @defparam, @defvar, @addterm, @addquadratic, @loadsolution, DWQMI
 
+import RobustPmap
+
 import Base.getindex
 import Base.string
 import Base.length
@@ -217,8 +219,8 @@ function collectterms!(m::Model)
 end
 
 function model2ab(m::Model)
-	diagterms = AbstractLinearTerm[]
-	offdiagterms = AbstractQuadraticTerm[]
+	diagterms = LinearTerm[]
+	offdiagterms = QuadraticTerm[]
 	varstring2index = Dict{Any, Int}()
 	i2varstring = Dict{Int, AbstractString}()
 	var2i(var) = varstring2index[string(var)]
@@ -249,9 +251,9 @@ function model2ab(m::Model)
 	a = zeros(numvars)
 	b = zeros(numvars, numvars)
 	for term in m.terms
-		if isa(term, AbstractLinearTerm)
+		if isa(term, LinearTerm)
 			a[var2i(term.var)] += term.realcoeff
-		elseif isa(term, AbstractQuadraticTerm)
+		elseif isa(term, QuadraticTerm)
 			i = min(var2i(term.var1), var2i(term.var2))
 			j = max(var2i(term.var1), var2i(term.var2))
 			b[i, j] += term.realcoeff
@@ -318,15 +320,16 @@ function rescale(h, j, maxh, maxj)
 	return h, j
 end
 
-saved_embeddings = Dict()
+const saved_embeddings = Dict()
 
 function findembeddings(Q, adjacency, reuse_embedding)
-	global embeddings
-	k = (Set(keys(Q)), Set(collect(adjacency)))
+	global saved_embeddings
+	k = (Set(keys(Q)), adjacency)
 	if reuse_embedding
-		if k in keys(saved_embeddings)
+		if haskey(saved_embeddings, k)
 			embeddings = saved_embeddings[k]
 		else
+			warn("embedding not reused")
 			reuse_embedding = false
 		end
 	end
@@ -337,18 +340,38 @@ function findembeddings(Q, adjacency, reuse_embedding)
 	return embeddings
 end
 
-function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain_factor=false, param_chain=1, auto_scale=false, reuse_embedding=false, async=false, timeout=60, kwargs...)
+function solvesapi!(m::Model, maxh=2, maxj=1; kwargs...)
 	paramdict = Dict(kwargs)
 	collectterms!(m, paramdict)
 	Q, i2varstring, numvars = model2sapiQ(m)
+	return solvesapi!(m, Q, i2varstring, numvars, maxh, maxj; kwargs...)
+end
+
+function matrix2Q(Qmat)
+	Q = Dict{Tuple{Int, Int}, Float64}()
+	for i = 1:size(Qmat, 1), j = 1:size(Qmat, 2)
+		if Qmat[i, j] != 0
+			Q[(i - 1, j - 1)] = Qmat[i, j]
+		end
+	end
+	return Q
+end
+
+function solvesapi!(Qmat::AbstractMatrix, maxh=2, maxj=1; kwargs...)
+	Q = matrix2Q(Qmat)
+	numvars = size(Qmat, 1)
+	solvesapi!(Qmat, Q, nothing, numvars, maxh, maxj; kwargs...)
+end
+
+function solvesapi!(m, Q::Associative, i2varstring::Union{Void,Associative}, numvars, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain_factor=false, param_chain=1, auto_scale=false, reuse_embedding=false, async=false, timeout=60, kwargs...)
 	embeddings = findembeddings(Q, adjacency, reuse_embedding)
 	if length(embeddings) == 0
 		error("embedding failed")
 	end
-	if param_chain_factor != false
-		param_chain = param_chain_factor * maximum(values(Q))
-	end
 	h, j, newembeddings, energyshift = DWQMI.embedproblem(Q, embeddings, adjacency; param_chain=param_chain)
+	if param_chain_factor != false
+		param_chain = param_chain_factor * max(maximum(h), maximum(map(abs, values(j))))
+	end
 	if auto_scale
 		h, j = rescale(h, j, maxh, maxj)
 	end
@@ -363,9 +386,54 @@ function solvesapi!(m::Model, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjace
 	return p1, newembeddings, i2varstring
 end
 
+function await_finishsolve!(ms, ps, newembeddingss, i2varstrings; url="https://localhost:10443/sapi/", token="", timeout=Inf, finishsolve_helper=(i, m, answer, embeddings)->nothing, kwargs...)
+	if haskey(ps[1], :_solver)#software solver -- no need to wait
+		embeddedanswers = RobustPmap.rpmap(p->p[:result](), ps)
+	else
+		numfinished = 0
+		embeddedanswers = Array(Any, length(ps))
+		alreadydownloaded = fill(false, length(ps))
+		while numfinished < length(ps)
+			done = DWQMI.dwcore.await_completion(ps[!alreadydownloaded], min(nworkers(), length(ps) - numfinished), timeout)
+			if !done
+				error("timed out awaiting solve_ising...or something: done=$done")
+			end
+			ids2download = Any[]
+			indices2download = Int[]
+			for i = 1:length(ps)
+				if !alreadydownloaded[i]
+					status = ps[i][:status]()
+					if status["remote_status"] == "COMPLETED"
+						push!(ids2download, status["problem_id"])
+						push!(indices2download, i)
+						alreadydownloaded[i] = true
+						numfinished += 1
+					end
+				end
+			end
+			embeddedanswers[indices2download] = RobustPmap.rpmap(id->getanswer(id, token, url), ids2download)
+		end
+	end
+	for i = 1:length(ps)
+		finishsolve!(ms[i], embeddedanswers[i], ps[i], newembeddingss[i], i2varstrings[i]; finishsolve_helper=(m, a, emb)->finishsolve_helper(i, m, a, emb), kwargs...)
+	end
+end
+
 function finishsolve!(m, p1, newembeddings, i2varstring; url="https://localhost:10443/sapi/", token="", kwargs...)
-	embeddedanswer = getanswer(p1[:status]()["problem_id"], token, url)
-	embeddedqubosolutions = map(x->x == -1 ? 0 : x == 1 ? 1 : 3, embeddedanswer["solutions"]::Array{Int, 2})
+	if haskey(p1, :_solver)#it is the software solver
+		embeddedanswer = p1[:result]()
+	else
+		embeddedanswer = getanswer(p1[:status]()["problem_id"], token, url)
+	end
+	finishsolve!(m, embeddedanswer, p1, newembeddings, i2varstring; kwargs...)
+end
+
+function finishsolve!(m::AbstractMatrix, embeddedanswer, p1, newembeddings, i2varstring; finishsolve_helper=(m, embeddedanswer, embeddings)->nothing, kwargs...)
+	finishsolve_helper(m, embeddedanswer, newembeddings)
+end
+
+function finishsolve!(m::Model, embeddedanswer, p1, newembeddings, i2varstring; kwargs...)
+	embeddedqubosolutions = map(x->x::Int == -1 ? 0 : x == 1 ? 1 : 3, embeddedanswer["solutions"])
 	unembeddedisingsolutions = DWQMI.unembedanswer(embeddedanswer["solutions"], newembeddings; kwargs...)
 	m.embedding = Dict(zip(map(i->i2varstring[i], 1:size(unembeddedisingsolutions, 2)), map(i->[newembeddings[i]...] + 1, 1:size(unembeddedisingsolutions, 2))))
 	m.bitsolutions = map(i->vec(embeddedqubosolutions[i, :]), 1:size(embeddedqubosolutions, 1))
@@ -501,6 +569,19 @@ end
 
 function evalvar(varref::VarRef, vardict::Associative)
 	return vardict[varref.v.name][varref.args...]
+end
+
+function evalqubo(Qmat, solution)
+	energy = 0.0
+	for i = 1:size(Qmat, 1)
+		if solution[i] == 1
+			energy += Qmat[i, i]
+			for j = 1:i - 1
+				energy += (Qmat[i, j] + Qmat[j, i]) * solution[j]
+			end
+		end
+	end
+	return energy
 end
 
 function evalqubo!(m::Model; kwargs...)

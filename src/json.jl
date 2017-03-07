@@ -19,6 +19,9 @@ end
 
 function getanswer(problem, token, url)
 	result = Requests.json(Requests.get("$url/problems/$problem"; headers=Dict("X-Auth-Token"=>token), tls_conf=Requests.TLS_NOVERIFY))
+	if !haskey(result, "answer")
+		error("error in the JSON result:\n$result")
+	end
 	answer = result["answer"]
 	active_variables = reinterpret(Int32, base64decode(answer["active_variables"]))
 	energies = reinterpret(Float64, base64decode(answer["energies"]))

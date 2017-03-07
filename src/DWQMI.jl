@@ -38,18 +38,122 @@ function getdw2xsys4(token)
 end
 
 function findembeddings(Q, adjacency=defaultadjacency)
-	return dwembed.find_embedding(collect(keys(Q)), adjacency, verbose=0, tries=100, timeout=300)
+	pythonembedding = dwembed.find_embedding(collect(keys(Q)), adjacency, verbose=0, tries=100, timeout=300)
+	return convert(Array{Array{Int, 1}}, pythonembedding)
 end
 
 function qubo2ising(Q)
-	h, j, energyshift = dwutil.qubo_to_ising(Q)
+	linearterms = Dict{Int, Float64}()
+	j = Dict{Tuple{Int, Int}, Float64}()
+	energyshift = 0.0
+	for kv in Q
+		k = kv[1]::Tuple{Int, Int}
+		v = kv[2]::Float64
+		m, n = min(k[1], k[2]), max(k[1], k[2])
+		if m == n
+			if haskey(linearterms, m)
+				linearterms[m] += 0.5 * v
+				energyshift += 0.5 * v
+			else
+				linearterms[m] = 0.5 * v
+				energyshift += 0.5 * v
+			end
+		else
+			j[(m, n)] = 0.25 * v
+			energyshift += .25 * v
+			if haskey(linearterms, m)
+				linearterms[m] += .25 * v
+			else
+				linearterms[m] = .25 * v
+			end
+			if haskey(linearterms, n)
+				linearterms[n] += .25 * v
+			else
+				linearterms[n] = .25 * v
+			end
+		end
+	end
+	h = zeros(maximum(keys(linearterms)) + 1)
+	for kv in linearterms
+		k = kv[1]
+		v = kv[2]
+		h[k + 1] = v
+	end
 	return h, j, energyshift
+end
+
+const savedvgcsandjcs = Dict()
+
+function getverygoodcouplingsandjc(h, j, embedding, fadj)
+	if haskey(savedvgcsandjcs, (embedding, fadj))
+		return savedvgcsandjcs[(embedding, fadj)]
+	end
+	physbit2logbit = Dict{Int, Int}()
+	for (i, physbits) in enumerate(embedding)
+		for physbit in physbits
+			physbit2logbit[physbit] = i - 1
+		end
+	end
+	goodcouplings = Dict{Tuple{Int, Int}, Tuple{Int, Int}}()#these are the couplings we want the machine to have...maps from physical couplings to virtual couplings
+	for k in keys(j)
+		m, n = min(k...), max(k...)
+		for b1 in embedding[m + 1]
+			for b2 in embedding[n + 1]
+				bl, bh = min(b1, b2), max(b1, b2)
+				goodcouplings[(bl, bh)] = (m, n)
+			end
+		end
+	end
+	verygoodcouplings = Dict{Tuple{Int, Int}, Set{Tuple{Int, Int}}}()#these are the couplings we want the machine to have and which it actually has...maps from virtual couplings to array of physical couplings
+	jc = Dict()
+	for x in fadj
+		m, n = min(x...), max(x...)
+		if haskey(physbit2logbit, m) && haskey(physbit2logbit, n)
+			if physbit2logbit[m] == physbit2logbit[n]
+				jc[(m, n)] = -1.0
+			end
+		end
+		if haskey(goodcouplings, (m, n))
+			if haskey(verygoodcouplings, goodcouplings[(m, n)])
+				push!(verygoodcouplings[goodcouplings[(m, n)]], (m, n))
+			else
+				verygoodcouplings[goodcouplings[(m, n)]] = Set{Tuple{Int, Int}}([(m, n)])
+			end
+		end
+	end
+	savedvgcsandjcs[(embedding, fadj)] = (verygoodcouplings, jc)
+	return verygoodcouplings, jc
+end
+
+const savedfadjs = Dict()
+
+function embed_problem(h, j, embedding, adjacency)
+	if haskey(savedfadjs, adjacency)
+		fadj = savedfadjs[adjacency]
+	else
+		fadj = convert(Array{Tuple{Int, Int}, 1}, collect(adjacency))
+		savedfadjs[adjacency] = fadj
+	end
+	numbits = maximum(map(x->max(x...), fadj)) + 1
+	newh = Any[0.0 for i in 1:numbits]
+	newj = Dict()
+	for i = 1:length(h)
+		newh[embedding[i] + 1] = h[i] / length(embedding[i])
+	end
+	verygoodcouplings, jc = getverygoodcouplingsandjc(h, j, embedding, fadj)
+	for k in keys(verygoodcouplings)
+		numcouplings = length(verygoodcouplings[k])
+		for x in verygoodcouplings[k]
+			newj[x] = j[k] / numcouplings
+		end
+	end
+	return newh, newj, jc, embedding
 end
 
 function embedproblem(Q, embeddings, adjacency=defaultadjacency; param_chain=1)
 	jparamchain = -param_chain
 	h, j, energyshift = qubo2ising(Q)
-	newh, newj, jc, newembeddings = dwembed.embed_problem(h, j, embeddings, adjacency)
+	newh, newj, jc, newembeddings = embed_problem(h, j, embeddings, adjacency)
 	for k in keys(jc)
 		if jc[k] == -1
 			newj[k] = jparamchain
