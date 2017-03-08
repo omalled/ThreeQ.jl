@@ -264,6 +264,24 @@ end
 
 function writeqbsolvfile(m::Model, filename)
 	a, b, i2varstring, numvars = model2ab(m)
+	writeqbsolvfile(a, b, i2varstring, numvars, filename)
+	return i2varstring
+end
+
+function writeqbsolvfile(Qmat, filename)
+	a = diag(Qmat)
+	b = zeros(size(Qmat)...)
+	numvars = size(Qmat, 1)
+	for i in 1:size(Qmat, 1)
+		for j = 1:i - 1
+			b[j, i] = Qmat[i, j] + Qmat[j, i]
+		end
+	end
+	i2varstring = Dict(zip(1:numvars, 1:numvars))
+	writeqbsolvfile(a, b, i2varstring, numvars, filename)
+end
+
+function writeqbsolvfile(a, b, i2varstring, numvars, filename)
 	f = open(filename, "w")
 	write(f, "p qubo 0 $(numvars) $(sum(a .!= 0)) $(sum(b .!= 0))\n")
 	for i = 1:length(a)
@@ -442,10 +460,12 @@ function finishsolve!(m::Model, embeddedanswer, p1, newembeddings, i2varstring; 
 	fillvalid!(m, embeddedanswer["solutions"], newembeddings)
 end
 
-function qbsolv!(m::Model; minval=nothing, S=0, showoutput=false, paramvals...)
-	paramdict = Dict(paramvals)
-	collectterms!(m, paramdict)
-	i2varstring = writeqbsolvfile(m, m.name * ".qbsolvin")
+function runqbsolv(connection, solver, filename, S, minval, timeout=nothing)
+	if timeout != nothing
+		timeoutstring = "-t $timeout"
+	else
+		timeoutstring = ""
+	end
 	if minval != nothing
 		targetstring = "-T $minval"
 	else
@@ -456,19 +476,27 @@ function qbsolv!(m::Model; minval=nothing, S=0, showoutput=false, paramvals...)
 	else
 		Sstring = "-S$S"
 	end
-	qbsolvcommand = `bash -c "dw set connection $(m.connection); dw set solver $(m.solver); qbsolv -i $(m.name * ".qbsolvin") $Sstring $targetstring -v10"`
+	qbsolvcommand = `bash -c "dw set connection $connection; dw set solver $solver; qbsolv -i $filename $Sstring $targetstring $timeoutstring -v1"`
 	output = readlines(qbsolvcommand)
-	rm(m.name * ".qbsolvin")
 	solutionline = length(output)
 	while !contains(output[solutionline - 1], "Number of bits in solution")
 		solutionline -= 1
 	end
+	bitsolution = map(b->parse(Int, b), collect(output[solutionline][1:end - 1]))
+	return bitsolution, output
+end
+
+function qbsolv!(m::Model; minval=nothing, S=0, showoutput=false, paramvals...)
+	paramdict = Dict(paramvals)
+	collectterms!(m, paramdict)
+	i2varstring = writeqbsolvfile(m, m.name * ".qbsolvin")
+	bitsolution, output = runqbsolv(m.connection, m.solver, m.name * ".qbsolvin", S, minval; showoutput=showoutput)
+	rm(m.name * ".qbsolvin")
 	if showoutput
 		for line in output
 			print(line)
 		end
 	end
-	bitsolution = map(b->parse(Int, b), collect(output[solutionline][1:end - 1]))
 	for i = 1:length(i2varstring)
 		fullvarname = i2varstring[i]
 		splitvarname = split(fullvarname, "___")
