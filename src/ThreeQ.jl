@@ -471,7 +471,12 @@ function finishsolve!(m::Model, embeddedanswer, p1, newembeddings, i2varstring; 
 	fillvalid!(m, embeddedanswer["solutions"], newembeddings)
 end
 
-function runqbsolv(connection, solver, filename, S, minval, timeout=nothing)
+function runqbsolv(connection, solver, filename, S, minval, timeout=nothing; seed=nothing)
+	if seed != nothing
+		seedstring = "-r $seed"
+	else
+		seedstring = ""
+	end
 	if timeout != nothing
 		timeoutstring = "-t $timeout"
 	else
@@ -487,7 +492,7 @@ function runqbsolv(connection, solver, filename, S, minval, timeout=nothing)
 	else
 		Sstring = "-S$S"
 	end
-	qbsolvcommand = `bash -c "dw set connection $connection; dw set solver $solver; qbsolv -i $filename $Sstring $targetstring $timeoutstring -v1"`
+	qbsolvcommand = `bash -c "dw set connection $connection; dw set solver $solver; qbsolv -i $filename $Sstring $targetstring $timeoutstring $seedstring -v1"`
 	output = readlines(qbsolvcommand)
 	solutionline = length(output)
 	while !contains(output[solutionline - 1], "Number of bits in solution")
