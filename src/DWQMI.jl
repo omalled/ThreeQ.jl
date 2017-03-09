@@ -21,7 +21,7 @@ function connect(token, url=defaulturl)
 end
 
 function getadjacency(solver)
-	return dwutil.get_hardware_adjacency(solver)
+	return collect(dwutil.get_hardware_adjacency(solver))
 end
 
 function getremotesolvers(connection)
@@ -37,9 +37,13 @@ function getdw2xsys4(token)
 	return getremotesolver(connection, "DW2X")
 end
 
-function findembeddings(Q, adjacency=defaultadjacency)
-	pythonembedding = dwembed.find_embedding(collect(keys(Q)), adjacency, verbose=0, tries=100, timeout=300)
-	return convert(Array{Array{Int, 1}}, pythonembedding)
+function findembeddings(Q, adjacency=defaultadjacency; verbose=0, tries=100, timeout=300)
+	pythonembedding = dwembed.find_embedding(collect(keys(Q)), adjacency, verbose=verbose, tries=tries, timeout=timeout)
+	if typeof(pythonembedding) == Array{Any, 2}
+		return convert(Array{Array{Int, 1}}, map(i->vec(pythonembedding[i, :]), 1:size(pythonembedding, 1)))
+	else
+		return convert(Array{Array{Int, 1}}, pythonembedding)
+	end
 end
 
 function qubo2ising(Q)

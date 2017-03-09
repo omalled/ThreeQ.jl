@@ -2,6 +2,7 @@ module ThreeQ
 
 export @defparam, @defvar, @addterm, @addquadratic, @loadsolution, DWQMI
 
+import JLD
 import RobustPmap
 
 import Base.getindex
@@ -340,20 +341,30 @@ end
 
 const saved_embeddings = Dict()
 
-function findembeddings(Q, adjacency, reuse_embedding)
+function findembeddings(Q, adjacency, reuse_embedding; embedding_dir=pwd(), kwargs...)
 	global saved_embeddings
 	k = (Set(keys(Q)), adjacency)
+	savefile = reuse_embedding
+	embeddingfile = joinpath(embedding_dir, "$(hash(k)).jld")
 	if reuse_embedding
 		if haskey(saved_embeddings, k)
 			embeddings = saved_embeddings[k]
+			savefile = false
+		elseif isfile(embeddingfile)
+			embeddings = JLD.load(embeddingfile, "embeddings")
+			savefile = false
+			saved_embeddings[k] = embeddings
 		else
 			warn("embedding not reused")
 			reuse_embedding = false
 		end
 	end
 	if !reuse_embedding
-		embeddings = DWQMI.findembeddings(Q, adjacency)
+		embeddings = DWQMI.findembeddings(Q, adjacency; kwargs...)
 		saved_embeddings[k] = embeddings
+		if savefile
+			JLD.save(embeddingfile, "embeddings", embeddings)
+		end
 	end
 	return embeddings
 end
@@ -382,7 +393,7 @@ function solvesapi!(Qmat::AbstractMatrix, maxh=2, maxj=1; kwargs...)
 end
 
 function solvesapi!(m, Q::Associative, i2varstring::Union{Void,Associative}, numvars, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain_factor=false, param_chain=1, auto_scale=false, reuse_embedding=false, async=false, timeout=60, kwargs...)
-	embeddings = findembeddings(Q, adjacency, reuse_embedding)
+	embeddings = findembeddings(Q, adjacency, reuse_embedding; kwargs...)
 	if length(embeddings) == 0
 		error("embedding failed")
 	end
