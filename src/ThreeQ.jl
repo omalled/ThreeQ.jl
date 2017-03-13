@@ -492,7 +492,11 @@ function runqbsolv(connection, solver, filename, S, minval, timeout=nothing; see
 	else
 		Sstring = "-S$S"
 	end
-	qbsolvcommand = `bash -c "dw set connection $connection; dw set solver $solver; qbsolv -i $filename $Sstring $targetstring $timeoutstring $seedstring -v1"`
+	if S == 0
+		qbsolvcommand = `bash -c "dw set connection $connection; dw set solver $solver; qbsolv -i $filename $Sstring $targetstring $timeoutstring $seedstring -v1"`
+	else
+		qbsolvcommand = `qbsolv -i $filename $Sstring $targetstring $timeoutstring $seedstring -v1`
+	end
 	output = readlines(qbsolvcommand)
 	solutionline = length(output)
 	while !contains(output[solutionline - 1], "Number of bits in solution")
