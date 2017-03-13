@@ -4,7 +4,6 @@ export @defparam, @defvar, @addterm, @addquadratic, @loadsolution, DWQMI
 
 import JLD
 import JuMP
-import Requires
 import RobustPmap
 
 import Base.getindex
@@ -13,9 +12,9 @@ import Base.length
 import Base.size
 import Base.==
 
-include("scip.jl")
 include("DWQMI.jl")
 include("json.jl")
+include("jump.jl")
 include("types.jl")
 include("macros.jl")
 include("viz.jl")
