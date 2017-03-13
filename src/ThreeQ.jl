@@ -3,6 +3,8 @@ module ThreeQ
 export @defparam, @defvar, @addterm, @addquadratic, @loadsolution, DWQMI
 
 import JLD
+import JuMP
+import Requires
 import RobustPmap
 
 import Base.getindex
@@ -11,6 +13,7 @@ import Base.length
 import Base.size
 import Base.==
 
+include("scip.jl")
 include("DWQMI.jl")
 include("json.jl")
 include("types.jl")
