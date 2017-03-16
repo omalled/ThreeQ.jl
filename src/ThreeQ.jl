@@ -399,10 +399,10 @@ function solvesapi!(m, Q::Associative, i2varstring::Union{Void,Associative}, num
 	if length(embeddings) == 0
 		error("embedding failed")
 	end
-	h, j, newembeddings, energyshift = DWQMI.embedproblem(Q, embeddings, adjacency; param_chain=param_chain)
 	if param_chain_factor != false
-		param_chain = param_chain_factor * max(maximum(h), maximum(map(abs, values(j))))
+		param_chain = param_chain_factor * max(maximum(abs(h)), maximum(map(abs, values(j))))
 	end
+	h, j, newembeddings, energyshift = DWQMI.embedproblem(Q, embeddings, adjacency; param_chain=param_chain)
 	if auto_scale
 		h, j = rescale(h, j, maxh, maxj)
 	end
