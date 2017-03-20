@@ -53,3 +53,22 @@ function getanswer(problem, token, url)
 	answer["solutions"] = solutions
 	return answer
 end
+
+function savebqpjson(Q, filename; description="", id=0, metadata=Dict(), variable_ids=collect(0:size(Q, 1)-1), variable_domain="boolean", scale=1.0, offset=0.0)
+	linear_terms = []
+	quadratic_terms = []
+	for i = 1:size(Q, 1)
+		if Q[i, i] != 0
+			push!(linear_terms, Dict("id"=>variable_ids[i], "coeff"=>Q[i, i]))
+		end
+		for j = 1:i - 1
+			if Q[i, j] + Q[j, i] != 0
+				push!(quadratic_terms, Dict("id_tail"=>variable_ids[j], "id_head"=>variable_ids[i], "coeff"=>Q[i, j] + Q[j, i]))
+			end
+		end
+	end
+	bqpdict = Dict("version"=>1.0.0, "id"=>id, "metadata"=>metadata, "variable_ids"=>variable_ids, "variable_domain"=>variable_domain, "scale"=>scale, "offset"=>offset, "linear_terms"=>linear_terms, "quadratic_terms"=>quadratic_terms)
+	f = open(filename, "w")
+	write(f, JSON.json(bqpdict))
+	close(f)
+end

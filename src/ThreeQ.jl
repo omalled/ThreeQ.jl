@@ -3,6 +3,7 @@ module ThreeQ
 export @defparam, @defvar, @addterm, @addquadratic, @loadsolution, DWQMI
 
 import JLD
+import JSON
 import JuMP
 import RobustPmap
 
