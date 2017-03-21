@@ -67,7 +67,7 @@ function savebqpjson(Q, filename; description="", id=0, metadata=Dict(), variabl
 			end
 		end
 	end
-	bqpdict = Dict("version"=>1.0.0, "id"=>id, "metadata"=>metadata, "variable_ids"=>variable_ids, "variable_domain"=>variable_domain, "scale"=>scale, "offset"=>offset, "linear_terms"=>linear_terms, "quadratic_terms"=>quadratic_terms)
+	bqpdict = Dict("version"=>"1.0.0", "id"=>id, "metadata"=>metadata, "variable_ids"=>variable_ids, "variable_domain"=>variable_domain, "scale"=>scale, "offset"=>offset, "linear_terms"=>linear_terms, "quadratic_terms"=>quadratic_terms)
 	f = open(filename, "w")
 	write(f, JSON.json(bqpdict))
 	close(f)
