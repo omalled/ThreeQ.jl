@@ -1,4 +1,4 @@
-using ToQ
+using ThreeQ
 import DataFrames
 import Gadfly
 import PyPlot
@@ -15,7 +15,7 @@ import PyPlot
 	end
 	q = quote
 		rfactor = rmax / (1 - 2. ^ -numbits)
-		model = ToQ.Model(modelargs...)
+		model = ThreeQ.Model(modelargs...)
 		@defvar model q[1:length(h)-1]#1 if perm is high, 0 if perm is low
 		@defvar model r[1:numbits, 1:length(h) - 2]#the bits of the groundwater source
 		minval = 0
@@ -23,7 +23,7 @@ import PyPlot
 			@addquadratic model ($innerexpr) ^ 2
 			minval -= (klow * h[i + 1] - klow * h[i] - klow * h[i] + klow * h[i - 1]) ^ 2
 		end
-		@time ToQ.solvesapi!(model; num_reads=num_reads, kwargs...)
+		@time ThreeQ.solvesapi!(model; num_reads=num_reads, kwargs...)
 		ks = Array(Float64, length(h) - 1, num_reads)
 		rs = Array(Float64, length(h) - 2, num_reads)
 		llhoods = Array(Float64, length(model.bitsolutions))
@@ -119,7 +119,7 @@ rb = bitrand(numbits, numhs - 2)
 klow = 1
 khigh = 2
 h = solver(kb, rb, klow, khigh, rmax)
-ks, rs, llhoods, model = sample(h + 0 * randn(length(h)), klow, khigh, rmax, beta, Val{numbits}; num_reads=10000, dwsolver=solver)
+ks, rs, llhoods, model = sample(h + 0 * randn(length(h)), klow, khigh, rmax, beta, Val{numbits}; num_reads=10000, dwsolver=dwsolver)
 reweightedllhoods = map(i->targetllhood(h, ks[:, i], rs[:, i]) - llhoods[i], 1:length(llhoods))
 numshow = length(llhoods)
 PyPlot.plot(1:length(llhoods[1:numshow]), llhoods[1:numshow], "k.")
