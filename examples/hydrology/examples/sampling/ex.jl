@@ -24,8 +24,8 @@ import PyPlot
 			minval -= (klow * h[i + 1] - klow * h[i] - klow * h[i] + klow * h[i - 1]) ^ 2
 		end
 		@time ThreeQ.solvesapi!(model; num_reads=num_reads, kwargs...)
-		ks = Array(Float64, length(h) - 1, num_reads)
-		rs = Array(Float64, length(h) - 2, num_reads)
+		ks = Array(Float64, length(h) - 1, length(model.bitsolutions))
+		rs = Array(Float64, length(h) - 2, length(model.bitsolutions))
 		llhoods = Array(Float64, length(model.bitsolutions))
 		for j = 1:length(model.bitsolutions)
 			@loadsolution(model, energy, occurrences, valid, j)
