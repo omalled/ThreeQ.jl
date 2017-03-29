@@ -40,10 +40,11 @@ end
 function findembeddings(Q, adjacency=defaultadjacency; verbose=0, tries=100, timeout=300, kwargs...)
 	pythonembedding = dwembed.find_embedding(collect(keys(Q)), adjacency, verbose=verbose, tries=tries, timeout=timeout)
 	if typeof(pythonembedding) == Array{Any, 2}
-		return convert(Array{Array{Int, 1}}, map(i->vec(pythonembedding[i, :]), 1:size(pythonembedding, 1)))
+		embedding = convert(Array{Array{Int, 1}}, map(i->vec(pythonembedding[i, :]), 1:size(pythonembedding, 1)))
 	else
-		return convert(Array{Array{Int, 1}}, pythonembedding)
+		embedding = convert(Array{Array{Int, 1}}, pythonembedding)
 	end
+	return embedding
 end
 
 function qubo2ising(Q)
