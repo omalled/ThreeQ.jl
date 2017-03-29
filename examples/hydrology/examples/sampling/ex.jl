@@ -14,7 +14,7 @@ import PyPlot
 		push!(innerexpr.args, :(rfactor * (2. ^ $(-i)) * r[$i, i - 1]))
 	end
 	q = quote
-		rfactor = rmax / (1 - 2. ^ -numbits)
+		rfactor = -rmax / (1 - 2. ^ -numbits)
 		model = ThreeQ.Model(modelargs...)
 		@defvar model q[1:length(h)-1]#1 if perm is high, 0 if perm is low
 		@defvar model r[1:numbits, 1:length(h) - 2]#the bits of the groundwater source
