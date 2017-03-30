@@ -13,9 +13,11 @@ import Base.length
 import Base.size
 import Base.==
 
+include("embedding.jl")
 include("DWQMI.jl")
 include("json.jl")
 include("jump.jl")
+include("sampler.jl")
 include("types.jl")
 include("macros.jl")
 include("viz.jl")
@@ -395,8 +397,10 @@ function solvesapi!(Qmat::AbstractMatrix, maxh=2, maxj=1; kwargs...)
 	solvesapi!(Qmat, Q, nothing, numvars, maxh, maxj; kwargs...)
 end
 
-function solvesapi!(m, Q::Associative, i2varstring::Union{Void,Associative}, numvars, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain_factor=false, param_chain=1, auto_scale=false, reuse_embedding=false, async=false, timeout=60, kwargs...)
-	embeddings = findembeddings(Q, adjacency, reuse_embedding; kwargs...)
+function solvesapi!(m, Q::Associative, i2varstring::Union{Void,Associative}, numvars, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain_factor=false, param_chain=1, auto_scale=false, reuse_embedding=false, async=false, timeout=60, embeddings=false, kwargs...)
+	if embeddings == false
+		embeddings = findembeddings(Q, adjacency, reuse_embedding; kwargs...)
+	end
 	if length(embeddings) == 0
 		error("embedding failed")
 	end
