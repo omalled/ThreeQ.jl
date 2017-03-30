@@ -1,15 +1,15 @@
-ToQ.jl: Julia interface to D-Wave's ToQ
+ThreeQ.jl: Julia interface to D-Wave's quantum annealing hardware
 ===============================
 
 Description
 -----------
 
-ToQ.jl is a [Julia](http://julialang.org/) module that includes several macros which effectively extend the syntax of Julia to include the main features of the ToQ programming language developed by [D-Wave](http://dwavesys.com). ToQ.jl uses D-Wave's ToQ as an intermediate representation. It is also capable of using D-Wave's qbsolv as a backend.
+ThreeQ.jl is a [Julia](http://julialang.org/) module that includes several macros which effectively extend the syntax of Julia to enable rapid prototyping of codes for [D-Wave](https://www.dwavesys.com/) hardware. ThreeQ.jl uses various tools from D-Wave's software suite (including the Python SAPI, [qbsolv](https://github.com/dwavesystems/qbsolv), and dw) as backends to access D-Wave hardware.
 
 Installation
 ------------
 
-First, Julia and D-Wave's qOp must be installed. Julia binaries can be obtained [here](http://julialang.org/downloads/). QOp must be obtained from D-Wave.
+First, Julia  must be installed. Julia binaries can be obtained [here](http://julialang.org/downloads/). In order to actually use the D-Wave, D-Wave hardware must be available and at least part of D-Wave's software stack must also be installed. D-Wave's [qbsolv](https://github.com/dwavesystems/qbsolv) tool can be used without D-Wave hardware. Other components (the Python SAPI and dw) must be obtained from D-Wave, if needed.
 
 Second, this repo must be cloned into a place where Julia can find it. You can tell Julia where to look for it by adding a line to your .juliarc.jl file like
 ```
