@@ -1,10 +1,12 @@
-ThreeQ.jl: Julia interface to D-Wave's quantum annealing hardware
+ThreeQ: Julia interface to D-Wave's quantum annealing hardware
 ===============================
 
 Description
 -----------
 
-ThreeQ.jl is a [Julia](http://julialang.org/) module that includes several macros which effectively extend the syntax of Julia to enable rapid prototyping of codes for [D-Wave](https://www.dwavesys.com/) hardware. ThreeQ.jl uses various tools from D-Wave's software suite (including the Python SAPI, [qbsolv](https://github.com/dwavesystems/qbsolv), and dw) as backends to access D-Wave hardware.
+ThreeQ is a [Julia](http://julialang.org/) module that includes several macros which effectively extend the syntax of Julia to enable rapid prototyping of codes for [D-Wave](https://www.dwavesys.com/) hardware. ThreeQ uses various tools from D-Wave's software suite (including the Python SAPI, [qbsolv](https://github.com/dwavesystems/qbsolv), and dw) as backends to access D-Wave hardware.
+
+A number of [examples](https://github.com/lanl/ThreeQ.jl/tree/master/examples) are including that illustrate how to use ThreeQ. These examples include [solving systems of linear equations](https://github.com/lanl/ThreeQ.jl/blob/master/examples/binlin/binlin.jl), [factoring integers](https://github.com/lanl/ThreeQ.jl/blob/master/examples/factorsmart/factorsmart.jl), [PDE-constrained optimization](https://github.com/lanl/ThreeQ.jl/blob/master/examples/mcmc/hydro/ex.jl), and [map coloring](https://github.com/lanl/ThreeQ.jl/blob/master/examples/canada_dwqmi/canada.jl).
 
 Installation
 ------------
@@ -19,12 +21,12 @@ For instance, my .juliarc.jl file contains
 ```
 push!(LOAD_PATH, "$(homedir())/codes")
 ```
-and within ~/codes, there is a directory containing this repo called ToQ.jl.
+and within ~/codes, there is a directory containing this repo called "ThreeQ.jl" or "ThreeQ".
 
 License
 -------
 
-ToQ.jl is provided under a BSD-ish license with a "modifications must be indicated" clause.  See LICENSE.md file for the full text.
+ThreeQ is provided under a BSD-ish license with a "modifications must be indicated" clause.  See LICENSE.md file for the full text.
 
 This package is part of the Hybrid Quantum-Classical Computing suite, known internally as LA-CC-16-032.
 
