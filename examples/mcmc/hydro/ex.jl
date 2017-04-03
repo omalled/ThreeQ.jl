@@ -1,3 +1,4 @@
+import JLD
 import ThreeQ
 import PyPlot
 
@@ -197,5 +198,6 @@ end#end Samples Module
 #tllh, bestsofar = Samples.countsamples(900, 10^4, 10000)
 probs = Dict()
 for a in logspace(.1, 1, 10), b in logspace(-1, -6, 6)
-	probs[(a, b)] = Samples.getprobabilityoftruekbs(a, b, 10)
+	@time probs[(a, b)] = Samples.getprobabilityoftruekbs(a, b, 10)
+	JLD.save("probs.jld", "probs", probs)
 end
