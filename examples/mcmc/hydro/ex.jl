@@ -59,8 +59,7 @@ function solver(kb, rs, klow, khigh)
 	return solver(ks, rs)
 end
 
-function sample(h, klow, khigh, rs; modelargs=("uq1d_model", "laptop", "c4-sw_sample", "workingdir", "c4"), num_reads=100, solver=ThreeQ.DWQMI.defaultsolver, kwargs...)
-    model = ThreeQ.Model(modelargs...)
+function sample(h, klow, khigh, rs; num_reads=100, solver=ThreeQ.DWQMI.defaultsolver, kwargs...)
 	Q = zeros(length(h) - 1, length(h) - 1)
     for i = 2:length(h) - 1
 		constterm = klow * h[i + 1] - klow * h[i] - klow * h[i] + klow * h[i - 1] + rs[i - 1]
