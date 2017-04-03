@@ -37,6 +37,11 @@ function getdw2xsys4(token)
 	return getremotesolver(connection, "DW2X")
 end
 
+function getvfyc(token)
+	connection = connect(token)
+	return getremotesolver(connection, "DW2X_VFYC")
+end
+
 function findembeddings(Q, adjacency=defaultadjacency; verbose=0, tries=100, timeout=300, kwargs...)
 	pythonembedding = dwembed.find_embedding(collect(keys(Q)), adjacency, verbose=verbose, tries=tries, timeout=timeout)
 	if typeof(pythonembedding) == Array{Any, 2}
