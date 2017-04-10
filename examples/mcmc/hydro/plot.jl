@@ -29,6 +29,7 @@ for (i, khigh) in enumerate(khighs)
 	end
 end
 ax[:set_xlim](-6, -0.5)
+ax[:set_ylim](0, 1.0)
 ax[:set_ylabel](L"P(\hat{\mathbf{k}}=\mathbf{k})")
 ax[:set_xlabel](L"\log_{10} \sigma")
 ax[:legend](map(x->latexstring("\$k_h = 10^{$(round(log10(x), 1))}k_l\$"), khighsused), loc=1)
