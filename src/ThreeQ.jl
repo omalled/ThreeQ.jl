@@ -20,7 +20,7 @@ include("jump.jl")
 include("sampler.jl")
 include("types.jl")
 include("macros.jl")
-include("viz.jl")
+#include("viz.jl")
 
 size(v::Var, args...) = size(v.value, args...)
 length(v::Var) = length(v.value)
