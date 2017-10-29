@@ -13,6 +13,11 @@ import Base.length
 import Base.size
 import Base.==
 
+const treeqdir = splitdir(splitdir(Base.source_path())[1])[1]
+function test()
+	include(joinpath(treeqdir, "test", "runtests.jl"))
+end
+
 include("embedding.jl")
 include("DWQMI.jl")
 include("json.jl")
