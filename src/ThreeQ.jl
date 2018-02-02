@@ -431,7 +431,7 @@ function await_finishsolve!(ms, ps, newembeddingss, i2varstrings; url="https://l
 		embeddedanswers = Array{Any}(length(ps))
 		alreadydownloaded = fill(false, length(ps))
 		while numfinished < length(ps)
-			done = DWQMI.dwcore.await_completion(ps[!alreadydownloaded], min(nworkers(), length(ps) - numfinished), timeout)
+			done = DWQMI.dwcore.await_completion(ps[.!(alreadydownloaded)], min(nworkers(), length(ps) - numfinished), timeout)
 			if !done
 				error("timed out awaiting solve_ising...or something: done=$done")
 			end
