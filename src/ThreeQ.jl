@@ -406,7 +406,7 @@ function solvesapi!(m, Q::Associative, i2varstring::Union{Void,Associative}, num
 	end
 	if param_chain_factor != false
 		h, j, _ = DWQMI.qubo2ising(Q)
-		param_chain = param_chain_factor * max(maximum(abs(h)), maximum(map(abs, values(j))))
+		param_chain = param_chain_factor * max(maximum(abs.(h)), maximum(map(abs, values(j))))
 	end
 	h, j, newembeddings, energyshift = DWQMI.embedproblem(Q, embeddings, adjacency; param_chain=param_chain)
 	if auto_scale
