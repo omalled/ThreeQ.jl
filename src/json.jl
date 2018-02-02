@@ -1,4 +1,40 @@
-import Requests
+import LibCURL
+import JSON
+
+function curl_write_cb(curlbuf::Ptr{Void}, s::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
+	global curldata
+	sz = s * n
+	curldata = Array{UInt8}(sz)
+	ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, UInt64), curldata, curlbuf, sz)
+	sz::Csize_t
+end
+
+const c_curl_write_cb = cfunction(curl_write_cb, Csize_t, (Ptr{Void}, Csize_t, Csize_t, Ptr{Void}))
+
+function downloadsolution(url, problem, token)
+	global curldata
+	fullurl = "$(url)problems/$problem"
+	curl = LibCURL.curl_easy_init()
+	LibCURL.curl_easy_setopt(curl, LibCURL.CURLOPT_URL, fullurl)#set the url
+	LibCURL.curl_easy_setopt(curl, LibCURL.CURLOPT_FOLLOWLOCATION, 1)#follow redirects
+	LibCURL.curl_easy_setopt(curl, LibCURL.CURLOPT_SSL_VERIFYPEER, 0)#don't freak out over SSL stuff
+	LibCURL.curl_easy_setopt(curl, LibCURL.CURLOPT_WRITEFUNCTION, c_curl_write_cb)#tell it how to store the data
+	#set up the header
+	chunk = LibCURL.curl_slist_append(C_NULL, "X-Auth-Token: $token")
+	LibCURL.curl_easy_setopt(curl, LibCURL.CURLOPT_HTTPHEADER, chunk)
+	#actually do the download
+	res = LibCURL.curl_easy_perform(curl)
+	#check for an error
+	http_code = Array{Clong}(1)
+	LibCURL.curl_easy_getinfo(curl, LibCURL.CURLINFO_RESPONSE_CODE, http_code)
+	if http_code != [200]
+		error("http error with code $http_code when accessing $fullurl")
+	end
+	#clean it up and return
+	LibCURL.curl_easy_cleanup(curl)
+	LibCURL.curl_slist_free_all(chunk)
+	return JSON.parse(String(curldata))
+end
 
 function uint82bits!(a, x, n)
 	a[n + 8] = (x & 0x01) != 0x00
@@ -18,7 +54,7 @@ function numbytespersolution(numbits)
 end
 
 function getanswer(problem, token, url)
-	result = Requests.json(Requests.get("$url/problems/$problem"; headers=Dict("X-Auth-Token"=>token), tls_conf=Requests.TLS_NOVERIFY))
+	result = downloadsolution(url, problem, token)
 	if !haskey(result, "answer")
 		error("error in the JSON result:\n$result")
 	end
@@ -27,7 +63,7 @@ function getanswer(problem, token, url)
 	energies = reinterpret(Float64, base64decode(answer["energies"]))
 	num_occurrences = reinterpret(Int32, base64decode(answer["num_occurrences"]))
 	uint8solutions = base64decode(answer["solutions"])
-	solutions1d = Array(Bool, 8 * length(uint8solutions))
+	solutions1d = Array{Bool}(8 * length(uint8solutions))
 	n = 0
 	for i = 1:length(uint8solutions)
 		uint82bits!(solutions1d, uint8solutions[i], n)

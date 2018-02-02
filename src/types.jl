@@ -21,9 +21,9 @@ type VarRef
 	args::Tuple
 end
 
-abstract Term
-abstract AbstractLinearTerm <: Term
-abstract AbstractQuadraticTerm <: Term
+abstract type Term end
+abstract type AbstractLinearTerm <: Term end
+abstract type AbstractQuadraticTerm <: Term end
 
 type ConstantTerm <: Term
 	realcoeff::Float64
@@ -117,5 +117,5 @@ type Model
 end
 
 function Model(name, connection, solver, workingdir, workspace)
-	return Model(name, connection, solver, workingdir, workspace, Array(Symbol, 0), Array(Symbol, 0), Array(Expr, 0), Array{Int32, 1}[], Float64[], Int32[], Bool[], Dict())
+	return Model(name, connection, solver, workingdir, workspace, Array{Symbol}(0), Array{Symbol}(0), Array{Expr}(0), Array{Int32, 1}[], Float64[], Int32[], Bool[], Dict())
 end

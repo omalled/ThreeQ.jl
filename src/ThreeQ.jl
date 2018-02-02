@@ -138,9 +138,9 @@ function readsol(filename)
 	resultlen = read(f, Int32)
 	numsolutions = read(f, Int32)
 	solutionlen = div(resultlen, numsolutions)
-	solutions = Array(Array{Int32, 1}, numsolutions)
-	energies = Array(Float64, numsolutions)
-	occurrences = Array(Int32, numsolutions)
+	solutions = Array{Array{Int32, 1}}(numsolutions)
+	energies = Array{Float64}(numsolutions)
+	occurrences = Array{Int32}(numsolutions)
 	for i = 1:numsolutions
 		solutions[i] = read(f, Int32, solutionlen)
 	end
@@ -428,7 +428,7 @@ function await_finishsolve!(ms, ps, newembeddingss, i2varstrings; url="https://l
 		embeddedanswers = RobustPmap.rpmap(p->p[:result](), ps)
 	else
 		numfinished = 0
-		embeddedanswers = Array(Any, length(ps))
+		embeddedanswers = Array{Any}(length(ps))
 		alreadydownloaded = fill(false, length(ps))
 		while numfinished < length(ps)
 			done = DWQMI.dwcore.await_completion(ps[!alreadydownloaded], min(nworkers(), length(ps) - numfinished), timeout)
@@ -555,7 +555,7 @@ function fillvalid!(m::Model, solutions, embeddings)
 end
 
 function fillvalid!(m::Model)
-	m.valid = Array(Bool, length(m.bitsolutions))
+	m.valid = Array{Bool}(length(m.bitsolutions))
 	for j = 1:length(m.valid)
 		m.valid[j] = true
 		for k in keys(m.embedding)

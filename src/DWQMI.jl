@@ -175,13 +175,13 @@ end
 function unembedanswer(solutions, embeddings; broken_chains="weighted_random", kwargs...)
 	if broken_chains != "weighted_random"
 		validkws = [:broken_chains, :h, :j]
-		solutionsarray = Array(Array{Any, 1}, size(solutions, 1))
+		solutionsarray = Array{Array{Any, 1}}(size(solutions, 1))
 		for i = 1:length(solutionsarray)
 			solutionsarray[i] = vec(solutions[i, :])
 		end
 		return dwembed.unembed_answer(solutionsarray, embeddings; broken_chains=broken_chains, validkwargs(kwargs, validkws)...)
 	else
-		unembeddedsolutions = Array(Int, size(solutions, 1), length(embeddings))
+		unembeddedsolutions = Array{Int}(size(solutions, 1), length(embeddings))
 		for j = 1:length(embeddings)
 			ks = rand(embeddings[j], size(solutions, 1))
 			for i = 1:size(solutions, 1)
