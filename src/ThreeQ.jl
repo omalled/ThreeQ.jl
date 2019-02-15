@@ -2,6 +2,7 @@ module ThreeQ
 
 export @defparam, @defvar, @addterm, @addquadratic, @loadsolution, DWQMI
 
+import Distributed
 import JLD
 import JSON
 import JuMP
@@ -29,7 +30,7 @@ function ==(x::VarRef, y::VarRef)
 	return x.v == y.v && x.args == y.args
 end
 
-function getindex{T}(v::Var{T}, args...)
+function getindex(v::Var{T}, args...) where T
 	if ndims(T) != length(args)
 		error("cannot access var $(v.name) with $(length(args)) dimensions when the dimensions are $(ndims(T))")
 	end
@@ -93,7 +94,7 @@ function assemble(x::Var)
 	return "var: $(string(x.name))\n"
 end
 
-function assemble{T<:Vector}(x::Var{T})
+function assemble(x::Var{T}) where {T <: Vector}
 	strings = String[]
 	for i = 1:length(x.value)
 		push!(strings, "var: $(string(x[i]))")
@@ -101,7 +102,7 @@ function assemble{T<:Vector}(x::Var{T})
 	return join(strings, "\n") * "\n"
 end
 
-function assemble{T<:Matrix}(x::Var{T})
+function assemble(x::Var{T}) where {T <: Matrix}
 	strings = String[]
 	for i = 1:size(x.value, 1)
 		for j = 1:size(x.value, 2)
@@ -397,7 +398,7 @@ function solvesapi!(Qmat::AbstractMatrix, maxh=2, maxj=1; kwargs...)
 	solvesapi!(Qmat, Q, nothing, numvars, maxh, maxj; kwargs...)
 end
 
-function solvesapi!(m, Q::AbstractDict, i2varstring::Union{Void,AbstractDict}, numvars, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain_factor=false, param_chain=1, auto_scale=false, reuse_embedding=false, async=false, timeout=60, embeddings=false, kwargs...)
+function solvesapi!(m, Q::AbstractDict, i2varstring::Union{Nothing,AbstractDict}, numvars, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain_factor=false, param_chain=1, auto_scale=false, reuse_embedding=false, async=false, timeout=60, embeddings=false, kwargs...)
 	if embeddings == false
 		embeddings = findembeddings(Q, adjacency, reuse_embedding; kwargs...)
 	end

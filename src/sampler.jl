@@ -1,7 +1,7 @@
 """
 Compute the Battacharyya distance
 """
-function bhatdist(p1s::Associative, p2s::Associative)
+function bhatdist(p1s::AbstractDict, p2s::AbstractDict)
 	if length(p1s) < length(p2s)
 		bhatdist(p2s, p1s)
 	end
@@ -18,7 +18,7 @@ function enumerateprobabilities(numbits, loglikelihood)
 	llhoods = Array{Float64}(2^numbits)
 	xs = map(collect, reshape(collect(Base.product(fill(0:1, numbits)...)), 2^numbits))
 	#for (i, x) in enumerate(xs)
-	@sync @parallel for i = 1:length(xs)
+	@sync @Distributed.distributed for i = 1:length(xs)
 		llhoods[i] = loglikelihood(xs[i])
 	end
 	llhoods -= maximum(llhoods)

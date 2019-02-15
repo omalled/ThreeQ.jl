@@ -18,10 +18,11 @@ macro defvar(model, x)
 		dims = []
 		for i = 2:length(x.args)
 			@assert typeof(x.args[i]) == Expr
-			@assert x.args[i].head == :(:)
-			@assert length(x.args[i].args) == 2
-			@assert x.args[i].args[1] == 1
-			push!(dims, :($(esc(x.args[i].args[2]))))
+			@assert x.args[i].head == :call
+			@assert x.args[i].args[1] == :(:)
+			@assert x.args[i].args[2] == :(1)
+			@assert length(x.args[i].args) == 3
+			push!(dims, :($(esc(x.args[i].args[3]))))
 		end
 		code = :($(esc(xsym)) = Var($stringx, fill(NaN, $(dims...))))
 		code = :($code; addvar!($(esc(model)), $(esc(xsym))))
@@ -32,7 +33,7 @@ macro defvar(model, x)
 end
 
 macro addterm(model, termexpr)
-	termexpr = macroexpand(termexpr)
+	termexpr = macroexpand(Main, termexpr)
 	if typeof(termexpr) == Expr
 		@assert termexpr.head == :call
 		@assert termexpr.args[1] == :*
@@ -47,7 +48,7 @@ macro addterm(model, termexpr)
 end
 
 macro addquadratic(model, quadexpr)
-	quadexpr = macroexpand(quadexpr)
+	quadexpr = macroexpand(Main, quadexpr)
 	if typeof(quadexpr) != Expr || quadexpr.head != :call || quadexpr.args[1] != :^ || quadexpr.args[end] != 2
 		error("$quadexpr is not a quadratic expression")
 	else

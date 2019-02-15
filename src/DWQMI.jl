@@ -84,7 +84,7 @@ function ising2qubo(hJ::Matrix)
 	return Q
 end
 
-function qubo2ising(Q::Associative)
+function qubo2ising(Q::AbstractDict)
 	linearterms = Dict{Int, Float64}()
 	j = Dict{Tuple{Int, Int}, Float64}()
 	energyshift = 0.0

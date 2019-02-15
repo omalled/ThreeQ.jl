@@ -1,5 +1,5 @@
 using ThreeQ
-using Base.Test
+using Test
 
 model = ThreeQ.Model("test_model", "laptop", "c4-sw_sample", "testdir", "c4")
 
@@ -11,7 +11,9 @@ model = ThreeQ.Model("test_model", "laptop", "c4-sw_sample", "testdir", "c4")
 @test model.vars[1].name == :q
 @test typeof(model.vars[1].value) == Float64
 @test typeof(model.vars[2].value) == Array{Float64, 1}
+@test length(model.vars[2].value) == 10
 @test typeof(model.vars[3].value) == Array{Float64, 2}
+@test size(model.vars[3].value) == (3, 3)
 
 #test @defparam
 @defparam model p
@@ -58,5 +60,5 @@ end
 @test model.terms[8].var == q
 
 x = [1, 2]
-@test_throws ErrorException eval(macroexpand(:(@addquadratic model (q + -x[1]) ^ 2)))#the -x[1] isn't supported, and it used to silently do the wrong thing
+@test_throws LoadError eval(macroexpand(Main, :(@addquadratic model (q + -x[1]) ^ 2)))#the -x[1] isn't supported, and it used to silently do the wrong thing
 :passed
