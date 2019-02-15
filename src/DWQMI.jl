@@ -49,14 +49,14 @@ function getremotesolver(connection, name)
 	return connection[:get_solver](name)
 end
 
-function getdw2xsys4(token)
+function getdw2q(token)
 	connection = connect(token)
-	return getremotesolver(connection, "DW2X")
+	return getremotesolver(connection, "DW_2000Q_LANL")
 end
 
 function getvfyc(token)
 	connection = connect(token)
-	return getremotesolver(connection, "DW2X_VFYC")
+	return getremotesolver(connection, "DW_2000Q_VFYC_LANL")
 end
 
 function findembeddings(Q, adjacency=defaultadjacency; verbose=0, tries=100, timeout=300, kwargs...)
@@ -197,7 +197,7 @@ function embed_problem(h, j, embedding, adjacency)
 	newh = Any[0.0 for i in 1:numbits]
 	newj = Dict()
 	for i = 1:length(h)
-		newh[embedding[i] + 1] = h[i] / length(embedding[i])
+		newh[embedding[i] .+ 1] .= h[i] / length(embedding[i])
 	end
 	verygoodcouplings, jc = getverygoodcouplingsandjc(h, j, embedding, fadj)
 	for k in keys(verygoodcouplings)
@@ -230,7 +230,7 @@ function unembedanswer(solutions, embeddings; broken_chains="weighted_random", k
 		end
 		return dwembed[:unembed_answer](solutionsarray, embeddings; broken_chains=broken_chains, validkwargs(kwargs, validkws)...)
 	else
-		unembeddedsolutions = Array{Int}(size(solutions, 1), length(embeddings))
+		unembeddedsolutions = Array{Int}(undef, size(solutions, 1), length(embeddings))
 		for j = 1:length(embeddings)
 			ks = rand(embeddings[j], size(solutions, 1))
 			for i = 1:size(solutions, 1)

@@ -1,4 +1,5 @@
 using ThreeQ
+import LinearAlgebra
 
 model = ThreeQ.Model("canada_model", "laptop", "c4-sw_sample", "workingdir", "c4")
 
@@ -48,6 +49,8 @@ end
 #solve the system
 solver = DWQMI.defaultsolver
 ThreeQ.solvesapi!(model; solver=solver, color=1, neighbor=5, param_chain=4, num_reads=100, auto_scale=false)
+#solver = DWQMI.getdw2q(mytoken)
+#ThreeQ.solvesapi!(model; solver=solver, color=1, neighbor=5, param_chain=4, num_reads=1000, auto_scale=true, token=mytoken)
 
 #load the solutions
 i = 1
@@ -67,10 +70,11 @@ end
 #print the solutions
 validcount = 0
 for i = 1:length(energies)
+	global validcount
 	isvalid = true
 	for j = 1:length(provinces)
 		for k = 1:j - 1
-			if provinces[k] in neighbors[provinces[j]] && norm(solutions[i][j, :] - solutions[i][k, :]) == 0
+			if provinces[k] in neighbors[provinces[j]] && LinearAlgebra.norm(solutions[i][j, :] - solutions[i][k, :]) == 0
 				@show k, provinces[k]
 				@show j, provinces[j]
 				isvalid = false

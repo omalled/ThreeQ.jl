@@ -1,8 +1,12 @@
+import Base64
 import JSON
 
 function downloadsolution(url, problem, token)
+	if token == ""
+		error("token not specified")
+	end
 	fullurl = "$(url)problems/$problem"
-	s = readstring(`curl --insecure --silent -H "X-Auth-Token: $token" $fullurl`)
+	s = read(`curl --insecure --silent -H "X-Auth-Token: $token" $fullurl`, String)
 	result = JSON.parse(s)
 	return result
 end
@@ -30,11 +34,11 @@ function getanswer(problem, token, url)
 		error("error in the JSON result:\n$result")
 	end
 	answer = result["answer"]
-	active_variables = reinterpret(Int32, base64decode(answer["active_variables"]))
-	energies = reinterpret(Float64, base64decode(answer["energies"]))
-	num_occurrences = reinterpret(Int32, base64decode(answer["num_occurrences"]))
-	uint8solutions = base64decode(answer["solutions"])
-	solutions1d = Array{Bool}(8 * length(uint8solutions))
+	active_variables = reinterpret(Int32, Base64.base64decode(answer["active_variables"]))
+	energies = reinterpret(Float64, Base64.base64decode(answer["energies"]))
+	num_occurrences = reinterpret(Int32, Base64.base64decode(answer["num_occurrences"]))
+	uint8solutions = Base64.base64decode(answer["solutions"])
+	solutions1d = Array{Bool}(undef, 8 * length(uint8solutions))
 	n = 0
 	for i = 1:length(uint8solutions)
 		uint82bits!(solutions1d, uint8solutions[i], n)

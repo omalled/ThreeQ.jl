@@ -415,7 +415,7 @@ function solvesapi!(m, Q::AbstractDict, i2varstring::Union{Nothing,AbstractDict}
 	end
 	p1 = DWQMI.asyncsolveising(h, j, solver; auto_scale=false, kwargs...)
 	if !async
-		done = DWQMI.dwcore.await_completion([p1], 1, timeout)
+		done = DWQMI.dwcore[:await_completion]([p1], 1, timeout)
 		if !done
 			error("timed out awaiting solve_ising...or something: done=$done")
 		end
@@ -432,7 +432,7 @@ function await_finishsolve!(ms, ps, newembeddingss, i2varstrings; url="https://l
 		embeddedanswers = Array{Any}(length(ps))
 		alreadydownloaded = fill(false, length(ps))
 		while numfinished < length(ps)
-			done = DWQMI.dwcore.await_completion(ps[.!(alreadydownloaded)], min(nworkers(), length(ps) - numfinished), timeout)
+			done = DWQMI.dwcore[:await_completion](ps[.!(alreadydownloaded)], min(nworkers(), length(ps) - numfinished), timeout)
 			if !done
 				error("timed out awaiting solve_ising...or something: done=$done")
 			end
@@ -473,7 +473,7 @@ end
 function finishsolve!(m::Model, embeddedanswer, p1, newembeddings, i2varstring; kwargs...)
 	embeddedqubosolutions = map(x->x::Int == -1 ? 0 : x == 1 ? 1 : 3, embeddedanswer["solutions"])
 	unembeddedisingsolutions = DWQMI.unembedanswer(embeddedanswer["solutions"], newembeddings; kwargs...)
-	m.embedding = Dict(zip(map(i->i2varstring[i], 1:size(unembeddedisingsolutions, 2)), map(i->[newembeddings[i]...] + 1, 1:size(unembeddedisingsolutions, 2))))
+	m.embedding = Dict(zip(map(i->i2varstring[i], 1:size(unembeddedisingsolutions, 2)), map(i->[newembeddings[i]...] .+ 1, 1:size(unembeddedisingsolutions, 2))))
 	m.bitsolutions = map(i->vec(embeddedqubosolutions[i, :]), 1:size(embeddedqubosolutions, 1))
 	m.energies = embeddedanswer["energies"]
 	m.occurrences = map(x->convert(Int32, x), embeddedanswer["num_occurrences"])
