@@ -186,7 +186,7 @@ function varset(t::ConstantTerm)
 	return Set()
 end
 
-function collectterms!(m::Model, paramdict::Associative)
+function collectterms!(m::Model, paramdict::AbstractDict)
 	newterms = Term[]
 	for term in m.terms
 		if isa(term, ParamLinearTerm)
@@ -397,7 +397,7 @@ function solvesapi!(Qmat::AbstractMatrix, maxh=2, maxj=1; kwargs...)
 	solvesapi!(Qmat, Q, nothing, numvars, maxh, maxj; kwargs...)
 end
 
-function solvesapi!(m, Q::Associative, i2varstring::Union{Void,Associative}, numvars, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain_factor=false, param_chain=1, auto_scale=false, reuse_embedding=false, async=false, timeout=60, embeddings=false, kwargs...)
+function solvesapi!(m, Q::AbstractDict, i2varstring::Union{Void,AbstractDict}, numvars, maxh=2, maxj=1; solver=DWQMI.defaultsolver, adjacency=DWQMI.getadjacency(solver), param_chain_factor=false, param_chain=1, auto_scale=false, reuse_embedding=false, async=false, timeout=60, embeddings=false, kwargs...)
 	if embeddings == false
 		embeddings = findembeddings(Q, adjacency, reuse_embedding; kwargs...)
 	end
@@ -619,11 +619,11 @@ function getnumsolutions(model)
 	return length(model.bitsolutions)
 end
 
-function evalvar(var, vardict::Associative)
+function evalvar(var, vardict::AbstractDict)
 	return vardict[var.name]
 end
 
-function evalvar(varref::VarRef, vardict::Associative)
+function evalvar(varref::VarRef, vardict::AbstractDict)
 	return vardict[varref.v.name][varref.args...]
 end
 

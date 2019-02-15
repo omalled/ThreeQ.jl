@@ -12,6 +12,7 @@ end
 const c_curl_write_cb = cfunction(curl_write_cb, Csize_t, (Ptr{Void}, Csize_t, Csize_t, Ptr{Void}))
 
 function downloadsolution(url, problem, token)
+	#=
 	global curldata
 	fullurl = "$(url)problems/$problem"
 	curl = LibCURL.curl_easy_init()
@@ -33,7 +34,15 @@ function downloadsolution(url, problem, token)
 	#clean it up and return
 	LibCURL.curl_easy_cleanup(curl)
 	LibCURL.curl_slist_free_all(chunk)
+	f = open("$(homedir())/threeq.json", "w")
+	write(f, String(curldata))
+	close(f)
 	return JSON.parse(String(curldata))
+	=#
+	fullurl = "$(url)problems/$problem"
+	s = readstring(`curl --insecure --silent -H "X-Auth-Token: $token" $fullurl`)
+	result = JSON.parse(s)
+	return result
 end
 
 function uint82bits!(a, x, n)

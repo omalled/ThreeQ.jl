@@ -1,4 +1,4 @@
-type Param
+mutable struct Param
 	name::Symbol
 	value::Float64
 end
@@ -7,7 +7,7 @@ function Param(s::AbstractString)
 	Param(Symbol(s), NaN)
 end
 
-type Var{T}
+mutable struct Var{T}
 	name::Symbol
 	value::T
 end
@@ -16,7 +16,7 @@ function Var(s::AbstractString, value=NaN)
 	Var(Symbol(s), value)
 end
 
-type VarRef
+mutable struct VarRef
 	v::Var
 	args::Tuple
 end
@@ -25,22 +25,22 @@ abstract type Term end
 abstract type AbstractLinearTerm <: Term end
 abstract type AbstractQuadraticTerm <: Term end
 
-type ConstantTerm <: Term
+mutable struct ConstantTerm <: Term
 	realcoeff::Float64
 end
 
-type LinearTerm <: AbstractLinearTerm
+mutable struct LinearTerm <: AbstractLinearTerm
 	realcoeff::Float64
 	var::Union{Var, VarRef}
 end
 
-type ParamLinearTerm <: AbstractLinearTerm
+mutable struct ParamLinearTerm <: AbstractLinearTerm
 	realcoeff::Float64
 	param::Param
 	var::Union{Var, VarRef}
 end
 
-type QuadraticTerm <: AbstractQuadraticTerm
+mutable struct QuadraticTerm <: AbstractQuadraticTerm
 	realcoeff::Float64
 	var1::Union{Var, VarRef}
 	var2::Union{Var, VarRef}
@@ -53,7 +53,7 @@ type QuadraticTerm <: AbstractQuadraticTerm
 	end
 end
 
-type ParamQuadraticTerm <: AbstractQuadraticTerm
+mutable struct ParamQuadraticTerm <: AbstractQuadraticTerm
 	realcoeff::Float64
 	param::Param
 	var1::Union{Var, VarRef}
@@ -100,7 +100,7 @@ function Term(args...)
 	end
 end
 
-type Model
+mutable struct Model
 	name::String
 	connection::String
 	solver::String
@@ -117,5 +117,5 @@ type Model
 end
 
 function Model(name, connection, solver, workingdir, workspace)
-	return Model(name, connection, solver, workingdir, workspace, Array{Symbol}(0), Array{Symbol}(0), Array{Expr}(0), Array{Int32, 1}[], Float64[], Int32[], Bool[], Dict())
+	return Model(name, connection, solver, workingdir, workspace, Array{Symbol}(undef, 0), Array{Symbol}(undef, 0), Array{Expr}(undef, 0), Array{Int32, 1}[], Float64[], Int32[], Bool[], Dict())
 end

@@ -52,7 +52,39 @@ function findembeddings(Q, adjacency=defaultadjacency; verbose=0, tries=100, tim
 	return embedding
 end
 
-function qubo2ising(Q)
+function qubo2ising(Q::Matrix)
+	@assert size(Q, 1) == size(Q, 2)
+	hJ = zeros(size(Q))
+	for i = 1:size(Q, 1)
+		for j = 1:size(Q, 2)
+			if i == j
+				hJ[i, i] += 0.5 * Q[i, i]
+			else
+				hJ[i, i] += 0.25 * (Q[i, j] + Q[j, i])
+				hJ[i, j] +=  0.25 * Q[i, j]
+			end
+		end
+	end
+	return hJ
+end
+
+function ising2qubo(hJ::Matrix)
+	@assert size(hJ, 1) == size(hJ, 2)
+	Q = zeros(size(hJ))
+	for i = 1:size(Q, 1)
+		for j = 1:size(Q, 2)
+			if i == j
+				Q[i, i] += 2 * hJ[i, i]
+			else
+				Q[i, i] -= 2 * (hJ[i, j] + hJ[j, i])
+				Q[i, j] += 4 * hJ[i, j]
+			end
+		end
+	end
+	return Q
+end
+
+function qubo2ising(Q::Associative)
 	linearterms = Dict{Int, Float64}()
 	j = Dict{Tuple{Int, Int}, Float64}()
 	energyshift = 0.0
