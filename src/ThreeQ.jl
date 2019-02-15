@@ -361,7 +361,7 @@ function findembeddings(Q, adjacency, reuse_embedding; embedding_dir=pwd(), kwar
 			savefile = false
 			saved_embeddings[k] = embeddings
 		else
-			warn("embedding not reused")
+			@warn "embedding not reused"
 			reuse_embedding = false
 		end
 	end
@@ -429,10 +429,10 @@ function await_finishsolve!(ms, ps, newembeddingss, i2varstrings; url="https://l
 		embeddedanswers = RobustPmap.rpmap(p->p[:result](), ps)
 	else
 		numfinished = 0
-		embeddedanswers = Array{Any}(length(ps))
+		embeddedanswers = Array{Any}(undef, length(ps))
 		alreadydownloaded = fill(false, length(ps))
 		while numfinished < length(ps)
-			done = DWQMI.dwcore[:await_completion](ps[.!(alreadydownloaded)], min(nworkers(), length(ps) - numfinished), timeout)
+			done = DWQMI.dwcore[:await_completion](ps[.!(alreadydownloaded)], min(Distributed.nworkers(), length(ps) - numfinished), timeout)
 			if !done
 				error("timed out awaiting solve_ising...or something: done=$done")
 			end
