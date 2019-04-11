@@ -6,6 +6,7 @@ import Distributed
 import JLD
 import JSON
 import JuMP
+import PyCall
 import RobustPmap
 
 import Base.getindex
@@ -415,7 +416,7 @@ function solvesapi!(m, Q::AbstractDict, i2varstring::Union{Nothing,AbstractDict}
 	end
 	p1 = DWQMI.asyncsolveising(h, j, solver; auto_scale=false, kwargs...)
 	if !async
-		done = DWQMI.dwcore[:await_completion]([p1], 1, timeout)
+		done = DWQMI.dwcore.await_completion([p1], 1, timeout)
 		if !done
 			error("timed out awaiting solve_ising...or something: done=$done")
 		end
@@ -425,14 +426,14 @@ function solvesapi!(m, Q::AbstractDict, i2varstring::Union{Nothing,AbstractDict}
 end
 
 function await_finishsolve!(ms, ps, newembeddingss, i2varstrings; url="https://localhost:10443/sapi/", token="", timeout=Inf, finishsolve_helper=(i, m, answer, embeddings)->nothing, kwargs...)
-	if haskey(ps[1], :_solver)#software solver -- no need to wait
-		embeddedanswers = RobustPmap.rpmap(p->p[:result](), ps)
+	if PyCall.hasproperty(ps[1], :_solver)#software solver -- no need to wait
+		embeddedanswers = RobustPmap.rpmap(p->p.result(), ps)
 	else
 		numfinished = 0
 		embeddedanswers = Array{Any}(undef, length(ps))
 		alreadydownloaded = fill(false, length(ps))
 		while numfinished < length(ps)
-			done = DWQMI.dwcore[:await_completion](ps[.!(alreadydownloaded)], min(Distributed.nworkers(), length(ps) - numfinished), timeout)
+			done = DWQMI.dwcore.await_completion(ps[.!(alreadydownloaded)], min(Distributed.nworkers(), length(ps) - numfinished), timeout)
 			if !done
 				error("timed out awaiting solve_ising...or something: done=$done")
 			end
@@ -440,7 +441,7 @@ function await_finishsolve!(ms, ps, newembeddingss, i2varstrings; url="https://l
 			indices2download = Int[]
 			for i = 1:length(ps)
 				if !alreadydownloaded[i]
-					status = ps[i][:status]()
+					status = ps[i].status()
 					if status["remote_status"] == "COMPLETED"
 						push!(ids2download, status["problem_id"])
 						push!(indices2download, i)
@@ -458,10 +459,10 @@ function await_finishsolve!(ms, ps, newembeddingss, i2varstrings; url="https://l
 end
 
 function finishsolve!(m, p1, newembeddings, i2varstring; url="https://localhost:10443/sapi/", token="", kwargs...)
-	if haskey(p1, :_solver)#it is the software solver
-		embeddedanswer = p1[:result]()
+	if PyCall.hasproperty(p1, :_solver)#it is the software solver
+		embeddedanswer = p1.result()
 	else
-		embeddedanswer = getanswer(p1[:status]()["problem_id"], token, url)
+		embeddedanswer = getanswer(p1.status()["problem_id"], token, url)
 	end
 	finishsolve!(m, embeddedanswer, p1, newembeddings, i2varstring; kwargs...)
 end
