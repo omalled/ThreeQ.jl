@@ -59,6 +59,16 @@ function getvfyc(token)
 	return getremotesolver(connection, "DW_2000Q_VFYC_LANL")
 end
 
+function getdw2x(token)
+	connection = connect(token)
+	return getremotesolver(connection, "DW2X_LANL_1")
+end
+
+function getdw2xvfyc(token)
+	connection = connect(token)
+	return getremotesolver(connection, "DW2X_VFYC_LANL_1")
+end
+
 function findembeddings(Q, adjacency=defaultadjacency; verbose=0, tries=100, timeout=300, kwargs...)
 	pythonembedding = dwembed.find_embedding(collect(keys(Q)), adjacency, verbose=verbose, tries=tries, timeout=timeout)
 	if typeof(pythonembedding) == Array{Any, 2}
