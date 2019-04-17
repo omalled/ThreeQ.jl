@@ -14,12 +14,14 @@ sigmaobs = 1e-2
 import ThreeQ
 import DataStructures
 import PyPlot
+import Random
+import SparseArrays
 #solve 1d groundwater equation assuming the left and right boundary have 0 head, with a spacing of 1 between nodes
 function solver(ks::Array{Float64, 1}, rs::Array{Float64, 1})
-	I = Array{Int}(3 * (length(ks) - 1) + 2)
-	J = Array{Int}(3 * (length(ks) - 1) + 2)
-	V = Array{Float64}(3 * (length(ks) - 1) + 2)
-	b = Array(Float64, length(ks) + 1)
+	I = Array{Int}(undef, 3 * (length(ks) - 1) + 2)
+	J = Array{Int}(undef, 3 * (length(ks) - 1) + 2)
+	V = Array{Float64}(undef, 3 * (length(ks) - 1) + 2)
+	b = Array{Float64}(undef, length(ks) + 1)
 	I[1] = 1; J[1] = 1; V[1] = 1.0; b[1] = length(ks)
 	I[2] = length(ks) + 1; J[2] = length(ks) + 1; V[2] = 1.0; b[2] = 0.0
 	push!(I, length(ks) + 1); push!(J, length(ks) + 1); push!(V, 1.); b[end] = 0.0
@@ -38,12 +40,12 @@ function solver(ks::Array{Float64, 1}, rs::Array{Float64, 1})
 		V[l + 2] = -(ks[i - 1] + ks[i]) / dx^2
 		l += 3
 	end
-	A = sparse(I, J, V)
+	A = SparseArrays.sparse(I, J, V)
 	return A \ b
 end
 
 function b2f(kb, klow, khigh)
-	local ks = Array(Float64, length(kb))
+	local ks = Array{Float64}(undef, length(kb))
 	for i = 1:length(kb)
 		if kb[i] == 1
 			ks[i] = khigh
@@ -78,9 +80,9 @@ function sample(h, klow, khigh, rs; num_reads=100, solver=ThreeQ.DWQMI.defaultso
 	=#
 	embeddings = longembedding[1:size(Q, 1)]
 	adjacency = ThreeQ.DWQMI.getadjacency(solver)
-	kbs = Array(Int, length(h) - 1, num_reads)
+	kbs = Array{Int}(undef, length(h) - 1, num_reads)
 	function finishsolve_helper(m, embans, emb)
-		answer = 0.5 * (ThreeQ.DWQMI.unembedanswer(embans["solutions"], emb)' + 1)#convert from ising to qubo
+		answer = 0.5 * (ThreeQ.DWQMI.unembedanswer(embans["solutions"], emb)' .+ 1)#convert from ising to qubo
 		i = 1
 		for j = 1:size(answer, 2)
 			occurrences = embans["num_occurrences"][j]
@@ -109,7 +111,7 @@ end
 
 function sample(h, klow, khigh, rs, myloglikelihood; burnin=100, numsteps=100, num_reads=100, kwargs...)
 	kbs = sample(h, klow, khigh, rs; num_reads=num_reads, kwargs...)
-	bigkbs = Array(Int, length(h) - 1, num_reads * numsteps)
+	bigkbs = Array{Int}(undef, length(h) - 1, num_reads * numsteps)
 	i = 1
 	for j = 1:size(kbs, 2)
 		bigkbs[:, i:i + numsteps - 1], _ = ThreeQ.sample(kbs[:, j], burnin, numsteps, myloglikelihood)
@@ -176,10 +178,11 @@ end
 function getprobabilityoftruekbs(thiskhigh, thissigmaobs, numrepeats)
 	global khigh = thiskhigh
 	global sigmaobs = thissigmaobs
-	dwsolver = ThreeQ.DWQMI.getdw2xsys4(Main.mytoken)
-	num_reads = 10000
+	#dwsolver = ThreeQ.DWQMI.getdw2xsys4(Main.mytoken)
+	dwsolver = ThreeQ.DWQMI.getdw2xvfyc(Main.mytoken)
+	num_reads = 100
 	numcorrect = 0
-	srand(0)
+	Random.seed!(0)
 	for j = 1:numrepeats
 		myloglikelihood, truekb, truers, obsh = makellhood(length(longembedding) + 1)
 		kbs = sample(obsh, klow, khigh, truers; num_reads=num_reads, solver=dwsolver, token=Main.mytoken, timeout=Inf)
@@ -197,7 +200,9 @@ end#end Samples Module
 #dw, cl = Samples.exactcompare(20, 100, 10^2, 10^2)
 #tllh, bestsofar = Samples.countsamples(900, 10^4, 10000)
 probs = Dict()
-for a in logspace(0.1, 0.5, 5), b in logspace(-1, -6, 6)
-	@time probs[(a, b)] = Samples.getprobabilityoftruekbs(a, b, 100)
-	JLD.save("probs.jld", "probs", probs)
+#for a in logspace(0.1, 0.5, 5), b in logspace(-1, -6, 6)
+for a in 10.0 .^ range(0.1, 0.5; length=2), b in 10.0 .^ range(-1, -6; length=2)
+	@show a, b
+	@time probs[(a, b)] = Samples.getprobabilityoftruekbs(a, b, 10)
+	JLD.save("probs_new.jld", "probs", probs)
 end
