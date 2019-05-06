@@ -1,6 +1,6 @@
 module ThreeQ
 
-export @defparam, @defvar, @addterm, @addquadratic, @loadsolution, DWQMI
+export @defparam, @defvar, @addterm, @addquadratic, @loadsolution, DWQMI, LongPaths
 
 import Distributed
 import JLD
@@ -19,6 +19,7 @@ include("embedding.jl")
 include("DWQMI.jl")
 include("json.jl")
 include("jump.jl")
+include("LongPaths.jl")
 include("sampler.jl")
 include("types.jl")
 include("macros.jl")
