@@ -69,6 +69,16 @@ function getdw2xvfyc(token)
 	return getremotesolver(connection, "DW2X_VFYC_LANL_1")
 end
 
+function getlownoise(token)
+	connection = connect(token, "https://cloud.dwavesys.com/sapi")
+	return getremotesolver(connection, "DW_2000Q_5")
+end
+
+function getlownoisevfyc(token)
+	connection = connect(token, "https://cloud.dwavesys.com/sapi")
+	return getremotesolver(connection, "DW_2000Q_VFYC_5")
+end
+
 function findembeddings(Q, adjacency=defaultadjacency; verbose=0, tries=100, timeout=300, kwargs...)
 	pythonembedding = dwembed.find_embedding(collect(keys(Q)), adjacency, verbose=verbose, tries=tries, timeout=timeout)
 	if typeof(pythonembedding) == Array{Any, 2}
