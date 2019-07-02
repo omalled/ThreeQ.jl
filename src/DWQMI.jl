@@ -84,7 +84,7 @@ function findembeddings(Q, adjacency=defaultadjacency; verbose=0, tries=100, tim
 	if typeof(pythonembedding) == Array{Any, 2}
 		embedding = convert(Array{Array{Int, 1}}, map(i->vec(pythonembedding[i, :]), 1:size(pythonembedding, 1)))
 	else
-		embedding = convert(Array{Array{Int, 1}}, pythonembedding)
+		embedding = map(x->Int[x], pythonembedding)
 	end
 	return embedding
 end
