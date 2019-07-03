@@ -83,8 +83,12 @@ function findembeddings(Q, adjacency=defaultadjacency; verbose=0, tries=100, tim
 	pythonembedding = dwembed.find_embedding(collect(keys(Q)), adjacency, verbose=verbose, tries=tries, timeout=timeout)
 	if typeof(pythonembedding) == Array{Any, 2}
 		embedding = convert(Array{Array{Int, 1}}, map(i->vec(pythonembedding[i, :]), 1:size(pythonembedding, 1)))
-	else
+	elseif typeof(pythonembedding) == Array{Int, 2}
 		embedding = map(x->Int[x], pythonembedding)
+	elseif typeof(pythonembedding) == Array{Array{Int, 1}, 1}
+		embedding = pythonembedding
+	else
+		error("weird type of python embedding $(typeof(pythonembedding))")
 	end
 	return embedding
 end
