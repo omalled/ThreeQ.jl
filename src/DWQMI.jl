@@ -88,7 +88,7 @@ function findembeddings(Q, adjacency=defaultadjacency; verbose=0, tries=100, tim
 	elseif typeof(pythonembedding) == Array{Array{Int, 1}, 1}
 		embedding = pythonembedding
 	else
-		error("weird type of python embedding $(typeof(pythonembedding))")
+		error("embedding failed")
 	end
 	return embedding
 end
