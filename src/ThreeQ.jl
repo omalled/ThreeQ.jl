@@ -497,7 +497,7 @@ function runqbsolv(connection, solver, filename, S, minval, timeout=nothing; see
 	else
 		targetstring = ""
 	end
-	if is(S, false)
+	if S == false
 		Sstring = ""
 	else
 		Sstring = "-S$S"
@@ -509,18 +509,18 @@ function runqbsolv(connection, solver, filename, S, minval, timeout=nothing; see
 	end
 	output = readlines(qbsolvcommand)
 	solutionline = length(output)
-	while !contains(output[solutionline - 1], "Number of bits in solution")
+	while !occursin("bits,", output[solutionline - 1])
 		solutionline -= 1
 	end
-	bitsolution = map(b->parse(Int, b), collect(output[solutionline][1:end - 1]))
+	bitsolution = map(b->parse(Int, b), collect(output[solutionline]))
 	return bitsolution, output
 end
 
-function qbsolv!(m::Model; minval=nothing, S=0, showoutput=false, paramvals...)
+function qbsolv!(m::Model; minval=nothing, S=0, showoutput=false, timeout=nothing, seed=nothing, paramvals...)
 	paramdict = Dict(paramvals)
 	collectterms!(m, paramdict)
 	i2varstring = writeqbsolvfile(m, m.name * ".qbsolvin")
-	bitsolution, output = runqbsolv(m.connection, m.solver, m.name * ".qbsolvin", S, minval; showoutput=showoutput)
+	bitsolution, output = runqbsolv(m.connection, m.solver, m.name * ".qbsolvin", S, minval, timeout; seed=seed)
 	rm(m.name * ".qbsolvin")
 	if showoutput
 		for line in output
