@@ -337,7 +337,11 @@ end
 function rescale(h, j, maxh, maxj)
 	j = deepcopy(j)
 	hfactor = maxh / maximum(abs.(h))
-	jfactor = maxj / maximum(map(abs, values(j)))
+	if length(j) > 0
+		jfactor = maxj / maximum(map(abs, values(j)))
+	else
+		jfactor = Inf
+	end
 	goodfactor = min(hfactor, jfactor)
 	h *= goodfactor
 	for key in keys(j)
@@ -386,7 +390,7 @@ end
 function matrix2Q(Qmat)
 	Q = Dict{Tuple{Int, Int}, Float64}()
 	for i = 1:size(Qmat, 1), j = 1:size(Qmat, 2)
-		if Qmat[i, j] != 0
+		if Qmat[i, j] != 0 || i == j
 			Q[(i - 1, j - 1)] = Qmat[i, j]
 		end
 	end
