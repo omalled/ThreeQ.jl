@@ -224,7 +224,7 @@ function embed_problem(h, j, embedding, adjacency)
 		newh[embedding[i] .+ 1] .= h[i] / length(embedding[i])
 	end
 	verygoodcouplings, jc = getverygoodcouplingsandjc(h, j, embedding, fadj)
-	for k in keys(verygoodcouplings)
+	for k in keys(j)
 		numcouplings = length(verygoodcouplings[k])
 		for x in verygoodcouplings[k]
 			newj[x] = j[k] / numcouplings
