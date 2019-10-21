@@ -36,7 +36,9 @@ function getanswer(problem, token, url)
 	answer = result["answer"]
 	active_variables = reinterpret(Int32, Base64.base64decode(answer["active_variables"]))
 	energies = reinterpret(Float64, Base64.base64decode(answer["energies"]))
-	num_occurrences = reinterpret(Int32, Base64.base64decode(answer["num_occurrences"]))
+	if haskey(answer, "num_occurrences")
+		num_occurrences = reinterpret(Int32, Base64.base64decode(answer["num_occurrences"]))
+	end
 	uint8solutions = Base64.base64decode(answer["solutions"])
 	solutions1d = Array{Bool}(undef, 8 * length(uint8solutions))
 	n = 0
@@ -60,7 +62,9 @@ function getanswer(problem, token, url)
 	end
 	answer["active_variables"] = active_variables
 	answer["energies"] = energies
-	answer["num_occurrences"] = num_occurrences
+	if haskey(answer, "num_occurrences")
+		answer["num_occurrences"] = num_occurrences
+	end
 	answer["solutions"] = solutions
 	return answer
 end

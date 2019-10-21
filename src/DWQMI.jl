@@ -248,7 +248,7 @@ end
 function unembedanswer(solutions, embeddings; broken_chains="weighted_random", kwargs...)
 	if broken_chains != "weighted_random"
 		validkws = [:broken_chains, :h, :j]
-		solutionsarray = Array{Array{Any, 1}}(size(solutions, 1))
+		solutionsarray = Array{Array{Any, 1}, 1}(undef, size(solutions, 1))
 		for i = 1:length(solutionsarray)
 			solutionsarray[i] = vec(solutions[i, :])
 		end
@@ -301,7 +301,7 @@ function asyncsolveising(h, j, solver=defaultsolver; kwargs...)
 	if solver == defaultsolver
 		validkws = [:annealing_time, :answer_mode, :beta, :chains, :max_answers, :num_reads, :num_spin_reversal_transforms, :postprocess, :programming_thermalization, :readout_thermalization]
 	else
-		validkws = [:annealing_time, :answer_mode, :auto_scale, :beta, :chains, :max_answers, :num_reads, :num_spin_reversal_transforms, :postprocess, :programming_thermalization, :readout_thermalization]
+		validkws = [:anneal_offsets, :annealing_time, :answer_mode, :auto_scale, :beta, :chains, :max_answers, :num_reads, :num_spin_reversal_transforms, :postprocess, :programming_thermalization, :readout_thermalization]
 	end
 	p1 = dwcore.async_solve_ising(solver, h, j; validkwargs(kwargs, validkws)...)
 	return p1
